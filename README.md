@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.3.0"><img alt="Latest release: v0.3.0" src="https://img.shields.io/badge/release-v0.3.0-2ea44f?style=flat-square"></a>
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.4.0"><img alt="Latest release: v0.4.0" src="https://img.shields.io/badge/release-v0.4.0-2ea44f?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
 </p>
 
@@ -97,7 +97,7 @@ addons/my-addon/
 
 Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, default state, screenshot, and an `addon`, `tweak`, or `theme` category shown in BetterCodex settings.
 
-The built-in **Generate addon** action can open a fresh Codex task with the target directory and complete implementation requirements attached—just describe the feature you want.
+The **Generate add-on**, **Generate tweak**, and **Generate theme** actions sit beside their catalog search bars. Each opens a fresh Codex task with the target directory and category-specific implementation requirements attached—just describe what you want. The requirements keep generated entries aligned with the current category, lifecycle conventions, and Codex's native components and visual language.
 
 ## 🔎 How it works
 

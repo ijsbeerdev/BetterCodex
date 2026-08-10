@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Turns Codex into a crisp phosphor terminal with monospace type, scanlines, and command-line color.",
   "category": "theme",
+  "tags": ["Terminal", "Dark"],
   "screenshot": "screenshot.svg",
   "enabledByDefault": false
 }

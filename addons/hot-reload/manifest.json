@@ -4,6 +4,7 @@
   "version": "0.2.0",
   "description": "Reloads BetterCodex add-ons as soon as their files change.",
   "category": "tweak",
+  "tags": ["Developer", "Automation"],
   "screenshot": "screenshot.svg",
   "enabledByDefault": true
 }

@@ -23,15 +23,15 @@ function setup() {
     repository: "https://github.com/ijsbeerdev/bettercodex",
     addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
     addons: [{
-      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", category: "addon", enabledByDefault: true },
+      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", category: "addon", tags: ["Productivity", "Projects"], enabledByDefault: true },
       screenshot: "data:image/svg+xml;base64,PHN2Zy8+",
       source: `BetterCodex.register({ id: "test-addon", start() { document.body.dataset.addon = "on"; }, stop() { delete document.body.dataset.addon; } });`
     }, {
-      manifest: { id: "test-tweak", name: "Test tweak", version: "1.0.0", description: "Tests tweak grouping.", category: "tweak", enabledByDefault: true },
+      manifest: { id: "test-tweak", name: "Test tweak", version: "1.0.0", description: "Tests tweak grouping.", category: "tweak", tags: ["Workflow"], enabledByDefault: true },
       screenshot: null,
       source: `BetterCodex.register({ id: "test-tweak", start() { document.body.dataset.tweak = "on"; }, stop() { delete document.body.dataset.tweak; } });`
     }, {
-      manifest: { id: "test-theme", name: "Test theme", version: "1.0.0", description: "Tests theme grouping.", category: "theme", enabledByDefault: false },
+      manifest: { id: "test-theme", name: "Test theme", version: "1.0.0", description: "Tests theme grouping.", category: "theme", tags: ["Dark"], enabledByDefault: false },
       screenshot: null,
       source: `BetterCodex.register({ id: "test-theme", start() { document.body.dataset.theme = "on"; }, stop() { delete document.body.dataset.theme; } });`
     }]
@@ -64,15 +64,24 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.deepEqual([...shadow.querySelectorAll(".nav-icon svg")].map((icon) => icon.getAttribute("viewBox")), ["0 0 24 24", "0 0 24 24", "0 0 24 24", "0 0 24 24"]);
   assert.match(shadow.querySelector(".version").textContent, /1\.0\.0/);
   assert.equal(shadow.querySelector(".update-check").textContent.trim(), "Check for updates");
+  assert.equal(shadow.querySelector(".update-check").previousElementSibling?.className, "version");
+  assert.equal(shadow.querySelector(".update-check").closest(".row").querySelector(".name")?.textContent, "Version");
   assert.equal(shadow.querySelector(".update-check svg").getAttribute("viewBox"), "0 0 16 16");
   assert.equal(shadow.querySelector(".source-link").href, "https://github.com/ijsbeerdev/bettercodex");
+  assert.equal(shadow.querySelectorAll(".section h2").length, 0);
+  assert.deepEqual([...shadow.querySelectorAll(".catalog-search")].map((input) => input.placeholder), ["Search add-ons", "Search tweaks", "Search themes"]);
+  assert.deepEqual([...shadow.querySelectorAll(".generate-action")].map((button) => button.textContent.replace(/\s+/g, " ").trim()), ["+Generate add-on", "+Generate tweak", "+Generate theme"]);
+  assert.deepEqual([...shadow.querySelectorAll(".generate-action")].map((button) => button.dataset.category), ["addon", "tweak", "theme"]);
   shadow.querySelector(".nav[data-target='addons']").click();
   assert.equal(shadow.getElementById("bettercodex").hidden, true);
   assert.equal(shadow.getElementById("addons").hidden, false);
   assert.equal(shadow.getElementById("bettercodex-title").textContent, "Add-ons");
   assert.equal(shadow.querySelector(".nav[data-target='addons']").getAttribute("aria-current"), "page");
-  assert.equal(shadow.querySelector(".generate-addon").textContent.replace(/\s+/g, " ").trim(), "+Generate addon");
+  assert.equal(shadow.querySelector("#addons .catalog-search").closest(".catalog-search-row").querySelector(".generate-action")?.dataset.category, "addon");
   assert.equal(shadow.querySelector(".addons-list .plugin-preview").getAttribute("src"), "data:image/svg+xml;base64,PHN2Zy8+");
+  assert.equal(shadow.querySelector("#addons .catalog-search").placeholder, "Search add-ons");
+  assert.deepEqual([...shadow.querySelectorAll("#addons .plugin-tag")].map((tag) => tag.textContent), ["Productivity", "Projects"]);
+  assert.equal(shadow.querySelector("#addons .result-count").textContent, "1 add-on");
   assert.equal(shadow.querySelector(".addons-list input[data-addon='test-tweak']"), null);
   shadow.querySelector(".nav[data-target='tweaks']").click();
   assert.equal(shadow.getElementById("addons").hidden, true);
@@ -90,6 +99,42 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.equal(shadow.querySelector("#bettercodex-title [data-bettercodex-icon]").getAttribute("viewBox"), "0 0 16 16");
   shadow.querySelector(".back").click();
   assert.equal(host.style.display, "none");
+  dom.window.BetterCodex.destroy();
+});
+
+test("searches and filters catalog cards by state and tags", () => {
+  const { dom } = setup();
+  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
+  const addonCard = shadow.querySelector(".addons-list [data-catalog-item='test-addon']");
+  const generateAddon = shadow.querySelector("#addons .generate-action");
+  const search = shadow.querySelector("#addons .catalog-search");
+
+  search.value = "projects";
+  search.dispatchEvent(new dom.window.Event("input"));
+  assert.equal(addonCard.hidden, false);
+  assert.equal(generateAddon.hidden, false);
+  assert.equal(shadow.querySelector("#addons .result-count").textContent, "1 add-on");
+
+  search.value = "missing";
+  search.dispatchEvent(new dom.window.Event("input"));
+  assert.equal(addonCard.hidden, true);
+  assert.equal(shadow.querySelector("#addons .empty-results").hidden, false);
+
+  search.value = "";
+  search.dispatchEvent(new dom.window.Event("input"));
+  shadow.querySelector("#addons [data-status='disabled']").click();
+  assert.equal(addonCard.hidden, true);
+  assert.equal(shadow.querySelector("#addons .empty-results").hidden, false);
+
+  const toggle = addonCard.querySelector("input");
+  toggle.checked = false;
+  toggle.dispatchEvent(new dom.window.Event("change"));
+  assert.equal(addonCard.hidden, false);
+
+  shadow.querySelector("#addons [data-status='all']").click();
+  shadow.querySelector("#addons [data-tag='projects']").click();
+  assert.equal(addonCard.hidden, false);
+  assert.equal(shadow.querySelector("#addons [data-tag='projects']").getAttribute("aria-pressed"), "true");
   dom.window.BetterCodex.destroy();
 });
 
@@ -133,7 +178,7 @@ test("enables, disables, persists, and cleans up add-ons", () => {
   dom.window.BetterCodex.destroy();
 });
 
-test("Generate addon prepares an unsent projectless task with requirements attached", async () => {
+test("Generate theme prepares an unsent projectless task with category-specific requirements", async () => {
   const { dom } = setup();
   const document = dom.window.document;
   let newChatClicks = 0;
@@ -190,15 +235,18 @@ test("Generate addon prepares an unsent projectless task with requirements attac
 
   const host = document.getElementById("bettercodex-client-root");
   document.getElementById("bettercodex-native-launcher").click();
-  host.shadowRoot.querySelector(".generate-addon").click();
+  host.shadowRoot.querySelector(".generate-action[data-category='theme']").click();
   await delay(350);
 
   assert.equal(host.style.display, "none");
   assert.equal(newChatClicks, 1);
   assert.equal(projectCleared, true);
   assert.equal(submitClicks, 0);
-  assert.equal(document.querySelector("[data-codex-composer]").textContent, "Add an add-on that copies the latest assistant response.");
-  assert.match(attachedRequirements, /^# BetterCodex add-on requirements/);
+  assert.equal(document.querySelector("[data-codex-composer]").textContent, "Add a warm, low-contrast theme for Codex.");
+  assert.match(attachedRequirements, /^# BetterCodex theme requirements/);
+  assert.match(attachedRequirements, /manifest category to "theme" exactly/i);
+  assert.match(attachedRequirements, /Codex's existing UI as the component library/i);
+  assert.match(attachedRequirements, /style native Codex and BetterCodex components in place/i);
   assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons/);
   assert.match(attachedRequirements, /BetterCodex\.register/);
   assert.match(attachedRequirements, /classic browser JavaScript/i);

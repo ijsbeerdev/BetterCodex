@@ -4,6 +4,7 @@
   "version": "0.2.0",
   "description": "Groups Codex tasks by live activity, approval state, completion, and code-change totals.",
   "category": "addon",
+  "tags": ["Projects", "Productivity"],
   "screenshot": "screenshot.svg",
   "enabledByDefault": true
 }

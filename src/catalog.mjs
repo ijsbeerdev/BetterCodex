@@ -23,6 +23,16 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   if (manifest.enabledByDefault !== undefined && typeof manifest.enabledByDefault !== "boolean") {
     throw new Error(`Add-on ${manifest.id} enabledByDefault must be a boolean`);
   }
+  if (manifest.tags !== undefined) {
+    if (!Array.isArray(manifest.tags) || manifest.tags.length === 0 || manifest.tags.length > 6
+      || manifest.tags.some((tag) => typeof tag !== "string" || !tag.trim() || tag.trim().length > 24 || tag.includes("|"))) {
+      throw new Error(`Add-on ${manifest.id} tags must be an array of 1 to 6 short labels`);
+    }
+    const normalizedTags = manifest.tags.map((tag) => tag.trim().toLocaleLowerCase());
+    if (new Set(normalizedTags).size !== normalizedTags.length) {
+      throw new Error(`Add-on ${manifest.id} tags must be unique`);
+    }
+  }
   if (manifest.screenshot !== undefined) {
     const extension = extname(manifest.screenshot).toLowerCase();
     if (typeof manifest.screenshot !== "string" || basename(manifest.screenshot) !== manifest.screenshot || !SCREENSHOT_TYPES.has(extension)) {
