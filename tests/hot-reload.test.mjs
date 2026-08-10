@@ -15,12 +15,27 @@ test("Hot Reload is the only bundled add-on and cleans up when disabled", async 
   assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["hot-reload"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
-  const dom = new JSDOM("<!doctype html><body></body>", { url: "https://codex.local/", runScripts: "dangerously" });
+  const dom = new JSDOM("<!doctype html><body><button aria-label='Open help menu'></button></body>", {
+    url: "https://codex.local/",
+    runScripts: "dangerously",
+    pretendToBeVisual: true
+  });
+  dom.window.document.querySelector("button").getBoundingClientRect = () => ({
+    left: 235, top: 735, right: 267, bottom: 767, width: 32, height: 32
+  });
   dom.window.eval(clientSource);
   dom.window.__BLACKBOX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
+  await delay(25);
   assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, true);
+  const shadow = dom.window.document.getElementById("blackbox-client-root").shadowRoot;
+  const launcher = shadow.querySelector(".launcher");
+  assert.equal(launcher.style.left, "197px");
+  assert.equal(launcher.style.top, "735px");
+  assert.ok(shadow.getElementById("blackbox-addon-hot-reload-layout"));
   dom.window.Blackbox.setEnabled("hot-reload", false);
   assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, undefined);
+  assert.equal(launcher.style.left, "");
+  assert.equal(shadow.getElementById("blackbox-addon-hot-reload-layout"), null);
   dom.window.Blackbox.destroy();
 });
 

@@ -1,7 +1,7 @@
 {
   "id": "hot-reload",
   "name": "Hot Reload",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Reloads Blackbox add-ons as soon as their files change.",
   "enabledByDefault": true
 }
