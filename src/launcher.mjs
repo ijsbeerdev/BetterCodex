@@ -89,6 +89,7 @@ async function main() {
   await log(`Starting Blackbox ${packageInfo.version}; watching ${addonsRoot} and ${clientPath}.`);
   let targets;
   let child;
+  let childExited = false;
   try { targets = await getTargets(); }
   catch {
     if (codexIsRunning()) {
@@ -103,6 +104,7 @@ async function main() {
       "--remote-debugging-address=127.0.0.1",
       "--remote-allow-origins=http://127.0.0.1"
     ], { detached: false, stdio: "ignore" });
+    child.once("exit", () => { childExited = true; });
     targets = await waitForDebugger();
   }
 
@@ -135,18 +137,36 @@ async function main() {
   }
 
   let failures = 0;
-  while (failures < 20 && !child?.killed) {
+  while (failures < 20 && !childExited) {
     try {
       targets = await getTargets();
       failures = 0;
       for (const target of targets) {
         if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
-        if (sessions.has(target.id)) continue;
+        if (!sessions.has(target.id)) {
+          try {
+            sessions.set(target.id, await injectTarget(target, currentExpression));
+            await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
+          } catch (error) {
+            await log(`Skipped renderer ${target.id}: ${error.message}`);
+          }
+          continue;
+        }
+        const session = sessions.get(target.id);
+        const now = Date.now();
+        if (now - (session.blackboxLastHealthCheck || 0) < 1_500) continue;
+        session.blackboxLastHealthCheck = now;
         try {
-          sessions.set(target.id, await injectTarget(target, currentExpression));
-          await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
+          const state = await session.send("Runtime.evaluate", {
+            expression: "globalThis.Blackbox?.version || null",
+            returnByValue: true
+          });
+          if (state.result?.value !== packageInfo.version) {
+            await replaceInjection(session, currentExpression);
+            await log(`Recovered renderer ${target.id} from ${state.result?.value || "missing"} to ${packageInfo.version}.`);
+          }
         } catch (error) {
-          await log(`Skipped renderer ${target.id}: ${error.message}`);
+          await log(`Renderer health check failed for ${target.id}: ${error.message}`);
         }
       }
       for (const [id, session] of sessions) {

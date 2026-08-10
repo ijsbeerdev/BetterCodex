@@ -109,7 +109,7 @@
                 <div class="row"><div class="copy"><div class="name">Source code</div><div class="description">View Blackbox on GitHub</div></div>
                   <a class="repo" href="${escapeAttribute(payload.repository)}" target="_blank" rel="noreferrer">Open ↗</a></div>
               </div></section>
-              <section class="section" id="addons"><h2>Add-ons</h2><div class="card addons"></div></section>
+              <section class="section" id="addons" hidden><h2>Add-ons</h2><div class="card addons"></div></section>
             </div>
           </main>
         </div>
@@ -205,14 +205,23 @@
       setTimeout(() => { mountScheduled = false; mountLauncher(); updateTheme(); }, 0);
     };
     const observer = new MutationObserver(scheduleMount);
-    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    const beginObserving = () => observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+    if (document.documentElement) beginObserving();
+    else document.addEventListener("DOMContentLoaded", beginObserving, { once: true, signal: controller.signal });
     controller.signal.addEventListener("abort", () => observer.disconnect(), { once: true });
 
     shadow.querySelector(".back").addEventListener("click", close, { signal: controller.signal });
     for (const nav of shadow.querySelectorAll(".nav")) {
       nav.addEventListener("click", () => {
         shadow.querySelectorAll(".nav").forEach((item) => item.classList.toggle("active", item === nav));
-        shadow.getElementById(nav.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        shadow.querySelectorAll(".section").forEach((section) => { section.hidden = section.id !== nav.dataset.target; });
+        shadow.getElementById("blackbox-title").textContent = nav.textContent.trim();
+        shadow.querySelector(".main").scrollTop = 0;
       }, { signal: controller.signal });
     }
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && host.style.display !== "none") close(); }, { signal: controller.signal });

@@ -45,6 +45,13 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.equal(host.style.display, "block");
   assert.match(shadow.querySelector(".version").textContent, /1\.0\.0/);
   assert.equal(shadow.querySelector(".repo").href, "https://github.com/ijsbeerdev/blackbox");
+  shadow.querySelector(".nav[data-target='addons']").click();
+  assert.equal(shadow.getElementById("general").hidden, true);
+  assert.equal(shadow.getElementById("addons").hidden, false);
+  assert.equal(shadow.getElementById("blackbox-title").textContent, "Add-ons");
+  shadow.querySelector(".nav[data-target='general']").click();
+  assert.equal(shadow.getElementById("general").hidden, false);
+  assert.equal(shadow.getElementById("addons").hidden, true);
   shadow.querySelector(".back").click();
   assert.equal(host.style.display, "none");
   dom.window.Blackbox.destroy();
