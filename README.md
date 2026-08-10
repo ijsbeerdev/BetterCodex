@@ -5,10 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ijsbeerdev/BetterCodex?style=flat-square&label=release"></a>
-  <a href="https://github.com/ijsbeerdev/BetterCodex/releases"><img alt="Release downloads" src="https://img.shields.io/github/downloads/ijsbeerdev/BetterCodex/total?style=flat-square&label=downloads"></a>
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.3.0"><img alt="Latest release: v0.3.0" src="https://img.shields.io/badge/release-v0.3.0-2ea44f?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
-  <img alt="Unofficial ChatGPT Codex mod" src="https://img.shields.io/badge/ChatGPT%20Codex-unofficial%20mod-111111?style=flat-square">
 </p>
 
 BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewriting the signed app package or `app.asar`. Install it once, keep receiving normal ChatGPT Codex updates, and open its compact settings hub from the robot icon beside **Help**.
