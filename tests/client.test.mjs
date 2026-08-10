@@ -38,8 +38,10 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   const help = document.querySelector("[aria-label='Open help menu']");
   assert.equal(launcher.nextElementSibling, help);
   assert.equal(launcher.className, help.className);
-  assert.equal(launcher.textContent, "");
-  assert.equal(launcher.querySelector("[data-blackbox-box]").style.backgroundColor, "rgb(255, 255, 255)");
+  assert.equal(launcher.textContent.trim(), "");
+  assert.equal(launcher.querySelector("[data-blackbox-box]").tagName, "svg");
+  assert.equal(launcher.querySelectorAll("[data-blackbox-box] path").length, 3);
+  assert.equal(launcher.querySelector("[data-blackbox-box]").style.color, "rgb(255, 255, 255)");
   assert.equal(host.style.display, "none");
   launcher.click();
   assert.equal(host.style.display, "block");

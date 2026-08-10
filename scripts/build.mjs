@@ -5,6 +5,7 @@ import { loadAddons } from "../src/catalog.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outputRoot = join(repoRoot, "dist");
+const releaseBuild = process.argv.includes("--release");
 const packageInfo = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 const addons = await loadAddons(join(repoRoot, "addons"));
 
@@ -19,9 +20,11 @@ await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
   version: packageInfo.version,
   repository: packageInfo.repository,
   type: "module",
-  developmentAddonsPath: join(repoRoot, "addons"),
-  developmentClientPath: join(repoRoot, "src", "client.js"),
+  ...(releaseBuild ? {} : {
+    developmentAddonsPath: join(repoRoot, "addons"),
+    developmentClientPath: join(repoRoot, "src", "client.js")
+  }),
   addons: addons.map(({ manifest }) => manifest)
 }, null, 2)}\n`);
 
-console.log(`Built Blackbox ${packageInfo.version} with ${addons.length} add-on(s) in ${outputRoot}`);
+console.log(`Built Blackbox ${packageInfo.version}${releaseBuild ? " release" : ""} with ${addons.length} add-on(s) in ${outputRoot}`);

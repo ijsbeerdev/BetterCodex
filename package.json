@@ -1,6 +1,6 @@
 {
   "name": "blackbox-codex-patcher",
-  "version": "1.2.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "A Vencord-style runtime mod loader for the Codex desktop app.",
@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs",
+    "package": "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1",
     "patch": "powershell -ExecutionPolicy Bypass -File scripts/patch.ps1",
     "unpatch": "powershell -ExecutionPolicy Bypass -File scripts/unpatch.ps1"
   },

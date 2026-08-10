@@ -2,6 +2,11 @@
   const ROOT_ID = "blackbox-client-root";
   const LAUNCHER_ID = "blackbox-native-launcher";
   const STORAGE_KEY = "blackbox:addons:v1";
+  const BOX_ICON = `<svg data-blackbox-box aria-hidden="true" class="icon-sm" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path>
+    <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"></path>
+    <path d="M12 3v6"></path>
+  </svg>`;
 
   function install(payload) {
     globalThis.Blackbox?.destroy?.();
@@ -62,7 +67,8 @@
         .shell { min-height:0; display:grid; grid-template-columns:256px minmax(0,1fr); }
         .sidebar { padding:22px 10px; border-right:1px solid var(--border); background:var(--side); }
         .brand { display:flex; align-items:center; gap:9px; padding:0 9px 18px; font-size:14px; font-weight:650; }
-        .box { width:14px; height:14px; border-radius:3px; background:var(--accent); }
+        .brand-icon { width:20px; height:20px; display:grid; place-items:center; color:var(--accent); }
+        .brand-icon svg { display:block; width:18px; height:18px; }
         .caption { padding:8px 9px 6px; color:var(--muted); font-size:11px; font-weight:650; }
         .nav { width:100%; height:32px; display:flex; align-items:center; padding:0 9px; color:var(--text); background:transparent;
           border:0; border-radius:7px; text-align:left; cursor:pointer; }
@@ -96,7 +102,7 @@
         <header class="topbar"><button class="back" type="button" aria-label="Back to app"><span>←</span><span>Back to app</span></button></header>
         <div class="shell">
           <aside class="sidebar">
-            <div class="brand"><span class="box"></span><span>Blackbox</span></div>
+            <div class="brand"><span class="brand-icon">${BOX_ICON}</span><span>Blackbox</span></div>
             <div class="caption">Blackbox</div>
             <button class="nav active" type="button" data-target="general">General</button>
             <button class="nav" type="button" data-target="addons">Add-ons</button>
@@ -135,7 +141,7 @@
       const dark = document.documentElement.classList.contains("electron-dark") ||
         (!document.documentElement.classList.contains("electron-light") && prefersDark);
       host.dataset.theme = dark ? "dark" : "light";
-      launcher?.querySelector("[data-blackbox-box]")?.style.setProperty("background-color", dark ? "#fff" : "#000");
+      launcher?.querySelector("[data-blackbox-box]")?.style.setProperty("color", dark ? "#fff" : "#000");
     };
     const open = () => {
       previousOverflow = document.body?.style.overflow || "";
@@ -192,7 +198,7 @@
       launcher.removeAttribute("disabled");
       launcher.setAttribute("aria-label", "Open Blackbox");
       launcher.title = "Blackbox";
-      launcher.innerHTML = '<span data-blackbox-box aria-hidden="true" style="display:block;width:14px;height:14px;border-radius:3px"></span>';
+      launcher.innerHTML = BOX_ICON;
       launcher.addEventListener("click", open, { signal: controller.signal });
       help.before(launcher);
       updateTheme();
