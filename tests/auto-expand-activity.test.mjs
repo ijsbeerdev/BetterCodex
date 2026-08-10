@@ -25,7 +25,7 @@ test("expands existing and newly collapsed activity groups until disabled", asyn
     runScripts: "dangerously"
   });
   let implementation;
-  dom.window.Blackbox = { register(value) { implementation = value; } };
+  dom.window.BetterCodex = { register(value) { implementation = value; } };
   dom.window.eval(addonSource);
 
   const existing = activityButton(dom.window.document);
@@ -33,7 +33,7 @@ test("expands existing and newly collapsed activity groups until disabled", asyn
   implementation.start();
   assert.equal(existing.button.getAttribute("aria-expanded"), "true");
   assert.equal(existing.clicks(), 1);
-  assert.equal(dom.window.__BLACKBOX_AUTO_EXPAND_ACTIVITY_ACTIVE__, true);
+  assert.equal(dom.window.__BETTERCODEX_AUTO_EXPAND_ACTIVITY_ACTIVE__, true);
 
   const added = activityButton(dom.window.document);
   dom.window.document.body.append(added.button);
@@ -47,7 +47,7 @@ test("expands existing and newly collapsed activity groups until disabled", asyn
   assert.equal(added.clicks(), 2);
 
   implementation.stop();
-  assert.equal(dom.window.__BLACKBOX_AUTO_EXPAND_ACTIVITY_ACTIVE__, undefined);
+  assert.equal(dom.window.__BETTERCODEX_AUTO_EXPAND_ACTIVITY_ACTIVE__, undefined);
   const afterStop = activityButton(dom.window.document);
   dom.window.document.body.append(afterStop.button);
   await delay();

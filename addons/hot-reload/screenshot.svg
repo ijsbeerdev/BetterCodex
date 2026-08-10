@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280" role="img" aria-labelledby="title desc">
   <title id="title">Hot Reload preview</title>
-  <desc id="desc">A Blackbox add-on file updating instantly in Codex.</desc>
+  <desc id="desc">A BetterCodex add-on file updating instantly in Codex.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0a0a0b"/><stop offset="1" stop-color="#19191c"/></linearGradient>
     <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#6d5dfc"/></linearGradient>
@@ -8,7 +8,7 @@
   <rect width="640" height="280" rx="20" fill="url(#bg)"/>
   <rect x="28" y="28" width="378" height="224" rx="14" fill="#151517" stroke="#343438"/>
   <circle cx="49" cy="48" r="4" fill="#ff6b6b"/><circle cx="63" cy="48" r="4" fill="#ffd166"/><circle cx="77" cy="48" r="4" fill="#66d38e"/>
-  <g font-family="Cascadia Code, Consolas, monospace" font-size="13"><text x="48" y="85" fill="#c792ea">Blackbox</text><text x="116" y="85" fill="#d7d7dd">.register({</text><text x="64" y="113" fill="#82aaff">id</text><text x="82" y="113" fill="#d7d7dd">: </text><text x="96" y="113" fill="#c3e88d">"my-addon"</text><text x="190" y="113" fill="#d7d7dd">,</text><text x="64" y="141" fill="#82aaff">start</text><text x="104" y="141" fill="#d7d7dd">() {</text><text x="80" y="169" fill="#89ddff">// live instantly</text><text x="64" y="197" fill="#d7d7dd">},</text><text x="64" y="225" fill="#82aaff">stop</text><text x="96" y="225" fill="#d7d7dd">() {}</text></g>
+  <g font-family="Cascadia Code, Consolas, monospace" font-size="13"><text x="48" y="85" fill="#c792ea">BetterCodex</text><text x="116" y="85" fill="#d7d7dd">.register({</text><text x="64" y="113" fill="#82aaff">id</text><text x="82" y="113" fill="#d7d7dd">: </text><text x="96" y="113" fill="#c3e88d">"my-addon"</text><text x="190" y="113" fill="#d7d7dd">,</text><text x="64" y="141" fill="#82aaff">start</text><text x="104" y="141" fill="#d7d7dd">() {</text><text x="80" y="169" fill="#89ddff">// live instantly</text><text x="64" y="197" fill="#d7d7dd">},</text><text x="64" y="225" fill="#82aaff">stop</text><text x="96" y="225" fill="#d7d7dd">() {}</text></g>
   <circle cx="512" cy="140" r="70" fill="#232329" stroke="#3c3c43"/>
   <path d="M526 68 472 149h37l-13 63 57-88h-38z" fill="url(#bolt)"/>
 </svg>

@@ -1,17 +1,17 @@
 (() => {
   let cleanup = () => {};
 
-  Blackbox.register({
+  BetterCodex.register({
     id: "project-kanban",
     start() {
       cleanup();
 
-      const ROOT_ATTRIBUTE = "data-blackbox-project-kanban-root";
-      const LAUNCHER_ATTRIBUTE = "data-blackbox-project-kanban-launcher";
-      const LAUNCHER_ROW_ATTRIBUTE = "data-blackbox-project-kanban-launcher-row";
-      const SUPPRESSED_NAV_ATTRIBUTE = "data-blackbox-project-kanban-suppressed-nav";
-      const STYLE_ATTRIBUTE = "data-blackbox-project-kanban-style";
-      const STORAGE_KEY = "blackbox.project-kanban.v1";
+      const ROOT_ATTRIBUTE = "data-bettercodex-project-kanban-root";
+      const LAUNCHER_ATTRIBUTE = "data-bettercodex-project-kanban-launcher";
+      const LAUNCHER_ROW_ATTRIBUTE = "data-bettercodex-project-kanban-launcher-row";
+      const SUPPRESSED_NAV_ATTRIBUTE = "data-bettercodex-project-kanban-suppressed-nav";
+      const STYLE_ATTRIBUTE = "data-bettercodex-project-kanban-style";
+      const STORAGE_KEY = "bettercodex.project-kanban.v1";
       const CHAT_PATH = /\/(?:tasks?|threads?|chats?|t)\/[^/?#]+/i;
       const STATUSES = ["old", "in-progress", "waiting", "done"];
       const STATUS_LABELS = {
@@ -124,7 +124,7 @@
       };
 
       const findNewChatControl = () => [...document.querySelectorAll("button, a[href]")].find((node) => {
-        if (node.closest(`[${ROOT_ATTRIBUTE}], [${LAUNCHER_ATTRIBUTE}], #blackbox-client-root`)) return false;
+        if (node.closest(`[${ROOT_ATTRIBUTE}], [${LAUNCHER_ATTRIBUTE}], #bettercodex-client-root`)) return false;
         const visibleText = normalizeText(node.textContent).slice(0, 80);
         const label = `${node.getAttribute("aria-label") || ""} ${node.getAttribute("title") || ""} ${visibleText}`;
         return /new\s+(task|chat|thread)|start\s+(task|chat|thread)/i.test(label);
@@ -142,7 +142,7 @@
       };
 
       const isChatControl = (control) => {
-        if (!(control instanceof Element) || control.closest(`[${ROOT_ATTRIBUTE}], #blackbox-client-root`)) return false;
+        if (!(control instanceof Element) || control.closest(`[${ROOT_ATTRIBUTE}], #bettercodex-client-root`)) return false;
         if (control.hasAttribute("data-app-action-sidebar-thread-row")) return true;
         if (!(control instanceof HTMLAnchorElement)) return false;
         const key = chatKey(control);
@@ -259,7 +259,7 @@
         if (rowSummary || !active) return rowSummary;
 
         const main = [...document.querySelectorAll("main")]
-          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#blackbox-client-root"));
+          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
         const summaryNode = main?.querySelector("[data-task-change-summary], [data-diff-summary], [data-files-changed], [aria-label*='files changed' i]");
         if (summaryNode) {
           const files = summaryNode.getAttribute("data-files-changed");
@@ -313,7 +313,7 @@
         const nativeActive = control.getAttribute("data-app-action-sidebar-thread-active") === "true" || control.getAttribute("aria-current") === "page";
         if (!nativeActive && key !== `${location.pathname}${location.search}`) return false;
         return [...document.querySelectorAll("button[aria-label], button[title]")].some((button) => {
-          if (button.closest(`[${ROOT_ATTRIBUTE}], #blackbox-client-root`)) return false;
+          if (button.closest(`[${ROOT_ATTRIBUTE}], #bettercodex-client-root`)) return false;
           const label = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("title") || ""}`;
           return /stop (generating|task|response)|cancel (generation|task)/i.test(label);
         });
@@ -692,7 +692,7 @@
       }
 
       const findMainSurface = () => [...document.querySelectorAll("main")]
-        .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#blackbox-client-root")) || null;
+        .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root")) || null;
 
       const restoreMainSurface = () => {
         const restore = state.mainRestore;

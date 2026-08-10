@@ -6,32 +6,32 @@ $packageRoot = $PSScriptRoot
 $runtimeSource = Join-Path $packageRoot "runtime"
 $nodeSource = Join-Path $packageRoot "node"
 $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
-$installRoot = Join-Path $localAppData "Blackbox"
-$startMenu = Join-Path ([Environment]::GetFolderPath("Programs")) "Blackbox for Codex.lnk"
-$desktop = Join-Path ([Environment]::GetFolderPath("Desktop")) "Blackbox for Codex.lnk"
-$startup = Join-Path ([Environment]::GetFolderPath("Startup")) "Blackbox Codex Watcher.lnk"
+$installRoot = Join-Path $localAppData "BetterCodex"
+$startMenu = Join-Path ([Environment]::GetFolderPath("Programs")) "BetterCodex for ChatGPT Codex.lnk"
+$desktop = Join-Path ([Environment]::GetFolderPath("Desktop")) "BetterCodex for ChatGPT Codex.lnk"
+$startup = Join-Path ([Environment]::GetFolderPath("Startup")) "BetterCodex ChatGPT Codex Watcher.lnk"
 
 if (-not (Test-Path -LiteralPath (Join-Path $runtimeSource "package.json"))) {
-    throw "The Blackbox runtime is missing. Extract the entire release ZIP before running the installer."
+    throw "The BetterCodex runtime is missing. Extract the entire release ZIP before running the installer."
 }
 if (-not (Test-Path -LiteralPath (Join-Path $nodeSource "node.exe"))) {
-    throw "The bundled Blackbox runtime is missing. Extract the entire release ZIP before running the installer."
+    throw "The bundled BetterCodex runtime is missing. Extract the entire release ZIP before running the installer."
 }
 if (-not [Environment]::Is64BitOperatingSystem) {
-    throw "This Blackbox release supports 64-bit Windows only."
+    throw "This BetterCodex release supports 64-bit Windows only."
 }
 
 $codexPackage = Get-AppxPackage -Name OpenAI.Codex |
     Sort-Object Version -Descending |
     Select-Object -First 1
 if ($null -eq $codexPackage) {
-    throw "The official Codex Windows app is not installed."
+    throw "The official ChatGPT Codex Windows app is not installed."
 }
 if (-not $installRoot.StartsWith($localAppData, [StringComparison]::OrdinalIgnoreCase)) {
     throw "Refusing to install outside Local AppData."
 }
 
-if ($PSCmdlet.ShouldProcess("Blackbox runtime processes", "Stop the previous runtime before updating")) {
+if ($PSCmdlet.ShouldProcess("BetterCodex runtime processes", "Stop the previous runtime before updating")) {
     $runtimeProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
         Where-Object {
             $_.CommandLine -like "*$installRoot\watcher.ps1*" -or
@@ -47,7 +47,7 @@ if ($PSCmdlet.ShouldProcess("Blackbox runtime processes", "Stop the previous run
     }
 }
 
-if ($PSCmdlet.ShouldProcess($installRoot, "Install the Blackbox runtime")) {
+if ($PSCmdlet.ShouldProcess($installRoot, "Install the BetterCodex runtime")) {
     if (Test-Path -LiteralPath $installRoot) {
         Remove-Item -LiteralPath $installRoot -Recurse -Force
     }
@@ -56,24 +56,8 @@ if ($PSCmdlet.ShouldProcess($installRoot, "Install the Blackbox runtime")) {
     Copy-Item -LiteralPath $nodeSource -Destination (Join-Path $installRoot "node") -Recurse -Force
 }
 
-# Remove registrations left by pre-patcher Blackbox builds.
-if (Get-Command codex -ErrorAction SilentlyContinue) {
-    $savedErrorPreference = $ErrorActionPreference
-    $ErrorActionPreference = "SilentlyContinue"
-    try {
-        if ($PSCmdlet.ShouldProcess("blackbox@blackbox", "Remove the old Blackbox native plugin")) {
-            & codex plugin remove blackbox@blackbox --json 2>$null | Out-Null
-        }
-        if ($PSCmdlet.ShouldProcess("blackbox", "Remove the old Blackbox marketplace")) {
-            & codex plugin marketplace remove blackbox --json 2>$null | Out-Null
-        }
-    } finally {
-        $ErrorActionPreference = $savedErrorPreference
-    }
-}
-
-function New-BlackboxShortcut([string]$path, [string]$scriptName, [string]$description) {
-    if (-not $PSCmdlet.ShouldProcess($path, "Create Blackbox shortcut")) { return }
+function New-BetterCodexShortcut([string]$path, [string]$scriptName, [string]$description) {
+    if (-not $PSCmdlet.ShouldProcess($path, "Create BetterCodex shortcut")) { return }
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($path)
     $shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -84,11 +68,11 @@ function New-BlackboxShortcut([string]$path, [string]$scriptName, [string]$descr
     $shortcut.Save()
 }
 
-New-BlackboxShortcut $startMenu "start.ps1" "Launch the official Codex app with Blackbox"
-New-BlackboxShortcut $desktop "start.ps1" "Launch the official Codex app with Blackbox"
-New-BlackboxShortcut $startup "watcher.ps1" "Load Blackbox when the official Codex app starts"
+New-BetterCodexShortcut $startMenu "start.ps1" "Launch the official ChatGPT Codex app with BetterCodex"
+New-BetterCodexShortcut $desktop "start.ps1" "Launch the official ChatGPT Codex app with BetterCodex"
+New-BetterCodexShortcut $startup "watcher.ps1" "Load BetterCodex when the official ChatGPT Codex app starts"
 
-if ($PSCmdlet.ShouldProcess("Blackbox launch watcher", "Start the normal-launch watcher")) {
+if ($PSCmdlet.ShouldProcess("BetterCodex launch watcher", "Start the normal-launch watcher")) {
     $watcherScript = Join-Path $installRoot "watcher.ps1"
     $watcherArguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -IgnoreExisting' -f $watcherScript
     Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $watcherArguments -WorkingDirectory $installRoot -WindowStyle Hidden
@@ -96,8 +80,8 @@ if ($PSCmdlet.ShouldProcess("Blackbox launch watcher", "Start the normal-launch 
 
 Write-Host ""
 if ($WhatIfPreference) {
-    Write-Host "Blackbox installer dry run completed." -ForegroundColor Green
+    Write-Host "BetterCodex installer dry run completed." -ForegroundColor Green
 } else {
-    Write-Host "Blackbox is installed." -ForegroundColor Green
-    Write-Host "Quit Codex completely, then open it normally. The package icon will appear beside Help."
+    Write-Host "BetterCodex is installed." -ForegroundColor Green
+    Write-Host "Quit ChatGPT Codex completely, then open it normally. The package icon will appear beside Help."
 }

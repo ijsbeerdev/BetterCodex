@@ -8,7 +8,7 @@ import { watchAddons } from "./hot-reload.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
-const port = Number(process.env.BLACKBOX_DEBUG_PORT || 11983);
+const port = Number(process.env.BETTERCODEX_DEBUG_PORT || 11983);
 
 async function resolveAddonsRoot() {
   const developmentRoot = packageInfo.developmentAddonsPath;
@@ -34,14 +34,14 @@ async function createExpression() {
   const clientSource = await readFile(clientPath, "utf8");
   const addons = await loadAddons(addonsRoot);
   const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons };
-  return `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
+  return `${clientSource}\n;globalThis.__BETTERCODEX_INJECT__(${JSON.stringify(payload)});`;
 }
 
 let currentExpression = await createExpression();
 
 async function log(message) {
   const line = `${new Date().toISOString()} [launcher] ${message}\n`;
-  try { await appendFile(join(runtimeRoot, "blackbox.log"), line); } catch {}
+  try { await appendFile(join(runtimeRoot, "bettercodex.log"), line); } catch {}
 }
 
 function powershell(script) {
@@ -49,9 +49,9 @@ function powershell(script) {
 }
 
 function resolveCodexExecutable() {
-  if (process.env.BLACKBOX_CODEX_EXE) return process.env.BLACKBOX_CODEX_EXE;
+  if (process.env.BETTERCODEX_CODEX_EXE) return process.env.BETTERCODEX_CODEX_EXE;
   const installLocation = powershell("(Get-AppxPackage -Name OpenAI.Codex | Sort-Object Version -Descending | Select-Object -First 1).InstallLocation");
-  if (!installLocation) throw new Error("The official Codex Windows app is not installed.");
+  if (!installLocation) throw new Error("The official ChatGPT Codex Windows app is not installed.");
   return join(installLocation, "app", "ChatGPT.exe");
 }
 
@@ -60,7 +60,7 @@ function codexIsRunning() {
   catch { return false; }
 }
 
-function showMessage(message, title = "Blackbox") {
+function showMessage(message, title = "BetterCodex") {
   const encoded = Buffer.from(message, "utf16le").toString("base64");
   const script = `Add-Type -AssemblyName PresentationFramework; $m=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encoded}')); [System.Windows.MessageBox]::Show($m,'${title}') | Out-Null`;
   const notification = spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", script], {
@@ -86,14 +86,14 @@ async function waitForDebugger() {
 }
 
 async function main() {
-  await log(`Starting Blackbox ${packageInfo.version}; watching ${addonsRoot} and ${clientPath}.`);
+  await log(`Starting BetterCodex ${packageInfo.version}; watching ${addonsRoot} and ${clientPath}.`);
   let targets;
   let child;
   let childExited = false;
   try { targets = await getTargets(); }
   catch {
     if (codexIsRunning()) {
-      showMessage("Quit Codex completely, then open Blackbox for Codex again. Blackbox can only attach when Codex starts through its launcher.");
+      showMessage("Quit ChatGPT Codex completely, then open BetterCodex for ChatGPT Codex again. BetterCodex can only attach when the app starts through its launcher.");
       process.exitCode = 2;
       return;
     }
@@ -118,7 +118,7 @@ async function main() {
       let reloaded = 0;
       for (const session of sessions.values()) {
         const state = await session.send("Runtime.evaluate", {
-          expression: "Boolean(globalThis.__BLACKBOX_HOT_RELOAD_ACTIVE__)",
+          expression: "Boolean(globalThis.__BETTERCODEX_HOT_RELOAD_ACTIVE__)",
           returnByValue: true
         });
         if (state.result?.value !== true) continue;
@@ -154,11 +154,11 @@ async function main() {
         }
         const session = sessions.get(target.id);
         const now = Date.now();
-        if (now - (session.blackboxLastHealthCheck || 0) < 1_500) continue;
-        session.blackboxLastHealthCheck = now;
+        if (now - (session.bettercodexLastHealthCheck || 0) < 1_500) continue;
+        session.bettercodexLastHealthCheck = now;
         try {
           const state = await session.send("Runtime.evaluate", {
-            expression: "globalThis.Blackbox?.version || null",
+            expression: "globalThis.BetterCodex?.version || null",
             returnByValue: true
           });
           if (state.result?.value !== packageInfo.version) {
@@ -184,6 +184,6 @@ async function main() {
 main().catch((error) => {
   console.error(error);
   log(`Fatal error: ${error.stack || error.message}`);
-  showMessage(`Blackbox could not start:\n\n${error.message}`);
+  showMessage(`BetterCodex could not start:\n\n${error.message}`);
   process.exitCode = 1;
 });

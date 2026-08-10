@@ -1,62 +1,128 @@
-# Blackbox
+# BetterCodex
 
-Blackbox is a Vencord-style client mod for the official Codex Windows app. Patch once, keep receiving Codex updates, and launch Codex normally to get a Blackbox button in the bottom-left sidebar.
+<p align="center">
+  <strong>A cozy, extensible mod loader for the official ChatGPT Codex Windows app.</strong>
+</p>
 
-Blackbox does not rewrite Codex's signed MSIX package or `app.asar`. A per-user launch watcher detects a normal Codex launch, immediately relaunches that fresh process with a loopback-only debugging endpoint, then injects the Blackbox UI at runtime. Its launcher resolves the newest installed Codex version each time.
+<p align="center">
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ijsbeerdev/BetterCodex?style=flat-square&label=release"></a>
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases"><img alt="Release downloads" src="https://img.shields.io/github/downloads/ijsbeerdev/BetterCodex/total?style=flat-square&label=downloads"></a>
+  <img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
+  <img alt="Unofficial ChatGPT Codex mod" src="https://img.shields.io/badge/ChatGPT%20Codex-unofficial%20mod-111111?style=flat-square">
+</p>
 
-## Install
+BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewriting the signed app package or `app.asar`. Install it once, keep receiving normal ChatGPT Codex updates, and open its compact settings hub from the package icon beside **Help**.
 
-Download `blackbox-0.2.0-windows-x64.zip` from the latest GitHub release, extract the entire ZIP, then double-click **Install Blackbox.cmd**. The package includes its own verified portable runtime, so Node.js and npm are not required.
+> [!NOTE]
+> BetterCodex is an unofficial community project and is not affiliated with or endorsed by OpenAI.
 
-Quit Codex completely, then launch it through the normal Start menu or taskbar entry. The first window may briefly disappear while the watcher relaunches it with Blackbox. A separate **Blackbox for Codex** shortcut remains available as a fallback.
+## ✨ What makes it better
 
-For development installs from source:
+- **Launch Codex normally** — the per-user watcher handles injection from your existing Start menu or taskbar shortcut.
+- **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
+- **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
+- **Instant development** — edit the client or an add-on and Hot Reload reinjects the change without restarting Codex.
+- **Built-in add-on generation** — start a focused Codex task with the exact scaffold, lifecycle, and installation requirements already attached.
+- **Clean removal** — uninstalling removes the watcher, shortcuts, and BetterCodex runtime while leaving Codex alone.
+
+## 🧩 Included add-ons
+
+| Add-on | What it does |
+| --- | --- |
+| **Kanban** | Groups Codex tasks by live activity, approval state, completion, and code-change totals. |
+| **Approval Shelf** | Keeps Codex's real composer and draft visible beneath approval prompts. |
+| **Auto Expand Activity** | Automatically opens collapsed command and file-edit activity in conversations. |
+| **Hot Reload** | Watches the client and add-on files, then refreshes every active renderer as you build. |
+
+All included add-ons are enabled by default and can be toggled independently from **BetterCodex settings → Plugins**.
+
+<table>
+  <tr>
+    <td width="50%"><img src="addons/project-kanban/screenshot.svg" alt="Kanban add-on preview"><br><strong>Kanban</strong></td>
+    <td width="50%"><img src="addons/approval-shelf/screenshot.svg" alt="Approval Shelf add-on preview"><br><strong>Approval Shelf</strong></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="addons/auto-expand-activity/screenshot.svg" alt="Auto Expand Activity add-on preview"><br><strong>Auto Expand Activity</strong></td>
+    <td width="50%"><img src="addons/hot-reload/screenshot.svg" alt="Hot Reload add-on preview"><br><strong>Hot Reload</strong></td>
+  </tr>
+</table>
+
+## 📦 Install
+
+1. Go to the [latest BetterCodex release](https://github.com/ijsbeerdev/BetterCodex/releases/latest).
+2. Download the Windows x64 ZIP attached to that release.
+3. Extract the **entire** ZIP.
+4. Double-click **Install BetterCodex.cmd**.
+5. Quit ChatGPT Codex completely, then launch it normally.
+
+The release includes its own verified portable runtime, so users do not need Node.js or npm. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached. A separate **BetterCodex for ChatGPT Codex** shortcut is also installed as a fallback.
+
+> [!TIP]
+> After installation, look for the package icon beside **Help** in the bottom-left account toolbar.
+
+## 🛠️ Build from source
+
+Source development requires Node.js 22 or newer.
 
 ```powershell
+git clone https://github.com/ijsbeerdev/BetterCodex.git
+cd BetterCodex
 npm install
 npm run build
-powershell -ExecutionPolicy Bypass -File .\scripts\patch.ps1
+npm run patch
 ```
 
-The bottom-left Blackbox button is inserted into Codex's native account toolbar beside Help. It uses Codex's own package icon and follows the active light or dark theme. It opens a full-window settings-style Blackbox view containing:
-
-- the installed Blackbox version;
-- a link to the source repository;
-- screenshot cards and enable/disable switches for every installed Blackbox add-on;
-- a **Generate addon** action that opens a fresh Codex task with the exact installation path and self-contained Blackbox scaffold requirements; Codex asks what to build inside that new task.
-
-## Hot Reload
-
-Hot Reload is enabled by default. While Codex is open, changes to the injected client or anything inside this repository's `addons/` directory are debounced and reinjected into every Blackbox renderer. Add, edit, or remove an add-on—or refine the Blackbox UI—without restarting Codex. Turn **Hot Reload** off in the Blackbox view to pause updates for the renderer.
-
-## Approval Shelf
-
-Approval Shelf preserves Codex's actual composer beneath approval prompts instead of replacing it with custom UI. The same native editor, controls, theme, and draft remain visible, and Codex reuses that editor when the approval resolves. It is enabled by default and can be toggled from **Blackbox settings → Plugins**.
-
-## Auto Expand Activity
-
-Auto Expand Activity automatically opens collapsed command and file-edit groups in the chat transcript. Newly added activity is expanded as it appears, and the behavior can be toggled from **Blackbox settings → Plugins**.
-
-## Add-ons
-
-Each add-on lives in `addons/<id>/` and contains a `manifest.json`, `index.js`, and screenshot asset referenced by the manifest. Add-on code registers itself with `Blackbox.register({ id, start, stop })`. Disabled state is persisted in Codex's local storage and `stop()` is called immediately when an add-on is turned off.
-
-## Unpatch
-
-Release installs include **Uninstall Blackbox.cmd**. Double-click it to remove Blackbox. For source installs, run:
+Useful commands:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\unpatch.ps1
+npm test        # Run the test suite
+npm run build   # Build the injectable runtime into dist/
+npm run package # Create a self-contained Windows release ZIP
+npm run unpatch # Remove a source installation
 ```
 
-Unpatching stops and removes the launch watcher, then removes the Blackbox runtime and shortcuts. It never modifies or removes the official Codex app.
+## 🧪 Build your own add-on
 
-## Develop
+Each add-on lives in `addons/<id>/` and contains:
+
+```text
+addons/my-addon/
+├── manifest.json
+├── index.js
+└── screenshot.svg
+```
+
+Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, default state, and screenshot shown in BetterCodex settings.
+
+The built-in **Generate addon** action can open a fresh Codex task with the target directory and complete implementation requirements attached—just describe the feature you want.
+
+## 🔎 How it works
+
+```text
+Normal Codex launch
+        ↓
+Per-user watcher detects the fresh process
+        ↓
+Codex relaunches with a loopback-only debugging endpoint
+        ↓
+BetterCodex injects the client and enabled add-ons at runtime
+```
+
+The launcher resolves the newest installed Codex version every time, which lets regular Codex updates continue normally. The debugging endpoint remains loopback-only.
+
+## 🧹 Uninstall
+
+Release packages include **Uninstall BetterCodex.cmd**. Run it to stop and remove the watcher, runtime, and BetterCodex shortcuts. For a source install, run `npm run unpatch`.
+
+The official ChatGPT Codex installation is never removed or modified.
+
+## 🤝 Contributing
+
+Issues and pull requests are welcome. Keep the UI cozy and compact, give every add-on a manifest and visible toggle, and make every `stop()` implementation fully reversible. Before opening a pull request, run:
 
 ```powershell
 npm test
 npm run build
-npm run package
 ```
 
-This is an unofficial client modification. The injection layer may need an update when Codex changes its renderer.
+The injection layer depends on Codex's renderer and may occasionally need an update when the app changes.

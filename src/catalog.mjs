@@ -43,6 +43,6 @@ export async function loadAddons(addonsRoot) {
       const image = await readFile(join(root, manifest.screenshot));
       screenshot = `data:${SCREENSHOT_TYPES.get(extension)};base64,${image.toString("base64")}`;
     }
-    return { manifest, screenshot, source: `${source}\n//# sourceURL=blackbox-addon://${manifest.id}/index.js` };
+    return { manifest, screenshot, source: `${source}\n//# sourceURL=bettercodex-addon://${manifest.id}/index.js` };
   }));
 }

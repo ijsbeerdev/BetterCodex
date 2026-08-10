@@ -6,7 +6,7 @@ if (Test-Path -LiteralPath $bundledNode) {
 } else {
     $node = (Get-Command node -ErrorAction Stop).Source
 }
-$mutex = New-Object System.Threading.Mutex($false, "Local\BlackboxCodexLauncher")
+$mutex = New-Object System.Threading.Mutex($false, "Local\BetterCodexCodexLauncher")
 if (-not $mutex.WaitOne(15000)) { return }
 try {
     & $node (Join-Path $runtimeRoot "launcher.mjs")

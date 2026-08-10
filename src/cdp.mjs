@@ -54,7 +54,7 @@ export async function injectTarget(target, expression) {
 }
 
 export async function replaceInjection(connection, expression) {
-  const previousIdentifier = connection.blackboxScriptIdentifier;
+  const previousIdentifier = connection.bettercodexScriptIdentifier;
   const registration = await connection.send("Page.addScriptToEvaluateOnNewDocument", { source: expression });
   try {
     const result = await connection.send("Runtime.evaluate", {
@@ -63,8 +63,8 @@ export async function replaceInjection(connection, expression) {
       returnByValue: true,
       userGesture: true
     });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || "Renderer rejected Blackbox");
-    connection.blackboxScriptIdentifier = registration.identifier;
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || "Renderer rejected BetterCodex");
+    connection.bettercodexScriptIdentifier = registration.identifier;
     if (previousIdentifier) {
       await connection.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: previousIdentifier });
     }

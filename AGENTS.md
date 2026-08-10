@@ -1,6 +1,6 @@
-# Blackbox agent guidance
+# BetterCodex agent guidance
 
-Blackbox is a Vencord-style runtime patcher for the official Codex Windows app. Do not recreate a standalone web app and do not rewrite Codex executables, signed MSIX files, `app.asar`, or update settings.
+BetterCodex is a runtime patcher for the official ChatGPT Codex Windows app. Do not recreate a standalone web app and do not rewrite Codex executables, signed MSIX files, `app.asar`, or update settings.
 
 Keep the injected UI in `src/client.js`, the launcher and CDP transport in `src/launcher.mjs` and `src/cdp.mjs`, the normal-launch watcher in `src/watcher.ps1`, and add-ons under `addons/<id>/`. Machine-level installation changes belong in `scripts/patch.ps1` and `scripts/unpatch.ps1` and must remain reversible.
 

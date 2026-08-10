@@ -1,6 +1,6 @@
 let autoExpandActivityCleanup = () => {};
 
-Blackbox.register({
+BetterCodex.register({
   id: "auto-expand-activity",
   start() {
     autoExpandActivityCleanup();
@@ -28,13 +28,13 @@ Blackbox.register({
       attributeFilter: ["aria-expanded"]
     });
     expand();
-    globalThis.__BLACKBOX_AUTO_EXPAND_ACTIVITY_ACTIVE__ = true;
+    globalThis.__BETTERCODEX_AUTO_EXPAND_ACTIVITY_ACTIVE__ = true;
 
     autoExpandActivityCleanup = () => {
       if (stopped) return;
       stopped = true;
       observer.disconnect();
-      delete globalThis.__BLACKBOX_AUTO_EXPAND_ACTIVITY_ACTIVE__;
+      delete globalThis.__BETTERCODEX_AUTO_EXPAND_ACTIVITY_ACTIVE__;
     };
   },
   stop() {

@@ -29,14 +29,14 @@ test("keeps Codex's native composer surface mounted beneath approvals", async ()
     pretendToBeVisual: true
   });
   let implementation;
-  dom.window.Blackbox = { register(value) { implementation = value; } };
+  dom.window.BetterCodex = { register(value) { implementation = value; } };
   dom.window.eval(addonSource);
 
   const original = nativeComposer(dom.window.document);
   original.editor.textContent = "Yaba yaba";
   dom.window.document.body.append(original.surface);
   implementation.start();
-  assert.equal(dom.window.__BLACKBOX_APPROVAL_SHELF_ACTIVE__, true);
+  assert.equal(dom.window.__BETTERCODEX_APPROVAL_SHELF_ACTIVE__, true);
 
   original.editor.remove();
   original.surface.remove();
@@ -46,11 +46,11 @@ test("keeps Codex's native composer surface mounted beneath approvals", async ()
   await delay();
 
   assert.equal(approval.nextElementSibling, original.surface);
-  assert.equal(original.surface.hasAttribute("data-blackbox-preserved-composer"), true);
+  assert.equal(original.surface.hasAttribute("data-bettercodex-preserved-composer"), true);
   assert.equal(original.editor.parentElement, original.editorParent);
   assert.equal(original.editor.textContent, "Yaba yaba");
   assert.equal(original.toolbar.querySelectorAll("button").length, 2);
-  assert.equal(dom.window.document.querySelector("[data-blackbox-approval-draft]"), null);
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-approval-draft]"), null);
   assert.equal(dom.window.document.body.textContent.includes("Your draft is safe"), false);
 
   original.editor.textContent = "Yaba yaba :p";
@@ -64,5 +64,5 @@ test("keeps Codex's native composer surface mounted beneath approvals", async ()
   assert.equal(original.surface.isConnected, false);
 
   implementation.stop();
-  assert.equal(dom.window.__BLACKBOX_APPROVAL_SHELF_ACTIVE__, undefined);
+  assert.equal(dom.window.__BETTERCODEX_APPROVAL_SHELF_ACTIVE__, undefined);
 });

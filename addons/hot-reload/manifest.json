@@ -2,7 +2,7 @@
   "id": "hot-reload",
   "name": "Hot Reload",
   "version": "0.2.0",
-  "description": "Reloads Blackbox add-ons as soon as their files change.",
+  "description": "Reloads BetterCodex add-ons as soon as their files change.",
   "screenshot": "screenshot.svg",
   "enabledByDefault": true
 }

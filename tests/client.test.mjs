@@ -20,68 +20,68 @@ function setup() {
   dom.window.eval(clientSource);
   const payload = {
     version: "1.0.0",
-    repository: "https://github.com/ijsbeerdev/blackbox",
-    addonsPath: "C:\\Users\\test\\AppData\\Local\\Blackbox\\addons",
+    repository: "https://github.com/ijsbeerdev/bettercodex",
+    addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
     addons: [{
       manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", enabledByDefault: true },
       screenshot: "data:image/svg+xml;base64,PHN2Zy8+",
-      source: `Blackbox.register({ id: "test-addon", start() { document.body.dataset.addon = "on"; }, stop() { delete document.body.dataset.addon; } });`
+      source: `BetterCodex.register({ id: "test-addon", start() { document.body.dataset.addon = "on"; }, stop() { delete document.body.dataset.addon; } });`
     }]
   };
-  dom.window.__BLACKBOX_INJECT__(payload);
+  dom.window.__BETTERCODEX_INJECT__(payload);
   return { dom, payload };
 }
 
 test("mounts a themed native button beside Help and opens a full-page view", () => {
   const { dom } = setup();
   const document = dom.window.document;
-  const host = document.getElementById("blackbox-client-root");
+  const host = document.getElementById("bettercodex-client-root");
   const shadow = host.shadowRoot;
-  const launcher = document.getElementById("blackbox-native-launcher");
+  const launcher = document.getElementById("bettercodex-native-launcher");
   const help = document.querySelector("[aria-label='Open help menu']");
   assert.equal(host.style.top, "36px");
   assert.equal(launcher.nextElementSibling, help);
   assert.equal(launcher.className, help.className);
   assert.equal(launcher.textContent.trim(), "");
-  assert.equal(launcher.querySelector("[data-blackbox-box]").tagName, "svg");
-  assert.equal(launcher.querySelectorAll("[data-blackbox-box] path").length, 3);
-  assert.equal(launcher.querySelector("[data-blackbox-box]").style.color, "rgb(255, 255, 255)");
+  assert.equal(launcher.querySelector("[data-bettercodex-box]").tagName, "svg");
+  assert.equal(launcher.querySelectorAll("[data-bettercodex-box] path").length, 3);
+  assert.equal(launcher.querySelector("[data-bettercodex-box]").style.color, "rgb(255, 255, 255)");
   assert.equal(host.style.display, "none");
   launcher.click();
   assert.equal(host.style.display, "block");
-  assert.equal(shadow.querySelector(".nav-heading").textContent, "Blackbox settings");
-  assert.deepEqual([...shadow.querySelectorAll(".nav-label")].map((item) => item.textContent), ["Blackbox", "Plugins", "Themes"]);
+  assert.equal(shadow.querySelector(".nav-heading").textContent, "BetterCodex settings");
+  assert.deepEqual([...shadow.querySelectorAll(".nav-label")].map((item) => item.textContent), ["BetterCodex", "Plugins", "Themes"]);
   assert.deepEqual([...shadow.querySelectorAll(".nav-icon svg")].map((icon) => icon.getAttribute("viewBox")), ["0 0 24 24", "0 0 24 24", "0 0 24 24"]);
   assert.match(shadow.querySelector(".version").textContent, /1\.0\.0/);
-  assert.equal(shadow.querySelector(".repo").href, "https://github.com/ijsbeerdev/blackbox");
+  assert.equal(shadow.querySelector(".repo").href, "https://github.com/ijsbeerdev/bettercodex");
   shadow.querySelector(".nav[data-target='plugins']").click();
-  assert.equal(shadow.getElementById("blackbox").hidden, true);
+  assert.equal(shadow.getElementById("bettercodex").hidden, true);
   assert.equal(shadow.getElementById("plugins").hidden, false);
-  assert.equal(shadow.getElementById("blackbox-title").textContent, "Plugins");
+  assert.equal(shadow.getElementById("bettercodex-title").textContent, "Plugins");
   assert.equal(shadow.querySelector(".nav[data-target='plugins']").getAttribute("aria-current"), "page");
   assert.equal(shadow.querySelector(".generate-addon").textContent.replace(/\s+/g, " ").trim(), "+Generate addon");
   assert.equal(shadow.querySelector(".plugin-preview").getAttribute("src"), "data:image/svg+xml;base64,PHN2Zy8+");
   shadow.querySelector(".nav[data-target='themes']").click();
   assert.equal(shadow.getElementById("plugins").hidden, true);
   assert.equal(shadow.getElementById("themes").hidden, false);
-  assert.equal(shadow.getElementById("blackbox-title").textContent, "Themes");
-  shadow.querySelector(".nav[data-target='blackbox']").click();
-  assert.equal(shadow.getElementById("blackbox").hidden, false);
+  assert.equal(shadow.getElementById("bettercodex-title").textContent, "Themes");
+  shadow.querySelector(".nav[data-target='bettercodex']").click();
+  assert.equal(shadow.getElementById("bettercodex").hidden, false);
   assert.equal(shadow.getElementById("themes").hidden, true);
   shadow.querySelector(".back").click();
   assert.equal(host.style.display, "none");
-  dom.window.Blackbox.destroy();
+  dom.window.BetterCodex.destroy();
 });
 
 test("enables, disables, persists, and cleans up add-ons", () => {
   const { dom } = setup();
   assert.equal(dom.window.document.body.dataset.addon, "on");
-  const input = dom.window.document.getElementById("blackbox-client-root").shadowRoot.querySelector("input[data-addon='test-addon']");
+  const input = dom.window.document.getElementById("bettercodex-client-root").shadowRoot.querySelector("input[data-addon='test-addon']");
   input.checked = false;
   input.dispatchEvent(new dom.window.Event("change"));
   assert.equal(dom.window.document.body.dataset.addon, undefined);
-  assert.equal(JSON.parse(dom.window.localStorage.getItem("blackbox:addons:v1"))["test-addon"], false);
-  dom.window.Blackbox.destroy();
+  assert.equal(JSON.parse(dom.window.localStorage.getItem("bettercodex:addons:v1"))["test-addon"], false);
+  dom.window.BetterCodex.destroy();
 });
 
 test("Generate addon prepares an unsent projectless task with requirements attached", async () => {
@@ -108,7 +108,7 @@ test("Generate addon prepares an unsent projectless task with requirements attac
       newEditor.contentEditable = "true";
       newEditor.setAttribute("data-codex-composer", "true");
       const projectSelector = document.createElement("button");
-      projectSelector.setAttribute("aria-label", "Change project: blackbox");
+      projectSelector.setAttribute("aria-label", "Change project: bettercodex");
       projectSelector.addEventListener("click", () => {
         const option = document.createElement("button");
         option.setAttribute("role", "option");
@@ -139,8 +139,8 @@ test("Generate addon prepares an unsent projectless task with requirements attac
     return true;
   };
 
-  const host = document.getElementById("blackbox-client-root");
-  document.getElementById("blackbox-native-launcher").click();
+  const host = document.getElementById("bettercodex-client-root");
+  document.getElementById("bettercodex-native-launcher").click();
   host.shadowRoot.querySelector(".generate-addon").click();
   await delay(350);
 
@@ -149,22 +149,22 @@ test("Generate addon prepares an unsent projectless task with requirements attac
   assert.equal(projectCleared, true);
   assert.equal(submitClicks, 0);
   assert.equal(document.querySelector("[data-codex-composer]").textContent, "Add an add-on that copies the latest assistant response.");
-  assert.match(attachedRequirements, /^# Blackbox add-on requirements/);
-  assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\Blackbox\\addons/);
-  assert.match(attachedRequirements, /Blackbox\.register/);
+  assert.match(attachedRequirements, /^# BetterCodex add-on requirements/);
+  assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons/);
+  assert.match(attachedRequirements, /BetterCodex\.register/);
   assert.match(attachedRequirements, /classic browser JavaScript/i);
   assert.match(attachedRequirements, /screenshot\.svg/);
   assert.match(attachedRequirements, /do not commit, push, package, publish, or create a release/i);
   assert.ok(attachedRequirements.length > 5_000);
-  dom.window.Blackbox.destroy();
+  dom.window.BetterCodex.destroy();
 });
 
 test("reinjection is idempotent", () => {
   const { dom, payload } = setup();
-  dom.window.__BLACKBOX_INJECT__(payload);
-  assert.equal(dom.window.document.querySelectorAll("#blackbox-client-root").length, 1);
-  assert.equal(dom.window.document.querySelectorAll("#blackbox-native-launcher").length, 1);
-  dom.window.Blackbox.destroy();
+  dom.window.__BETTERCODEX_INJECT__(payload);
+  assert.equal(dom.window.document.querySelectorAll("#bettercodex-client-root").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("#bettercodex-native-launcher").length, 1);
+  dom.window.BetterCodex.destroy();
 });
 
 test("waits for the native toolbar before showing its launcher", async () => {
@@ -175,14 +175,14 @@ test("waits for the native toolbar before showing its launcher", async () => {
   });
   dom.window.matchMedia = () => ({ matches: false });
   dom.window.eval(clientSource);
-  dom.window.__BLACKBOX_INJECT__({ version: "1.2.0", repository: "https://example.test", addons: [] });
-  assert.equal(dom.window.document.getElementById("blackbox-native-launcher"), null);
+  dom.window.__BETTERCODEX_INJECT__({ version: "1.2.0", repository: "https://example.test", addons: [] });
+  assert.equal(dom.window.document.getElementById("bettercodex-native-launcher"), null);
 
   const help = dom.window.document.createElement("button");
   help.setAttribute("aria-label", "Open help menu");
   help.getBoundingClientRect = () => ({ left: 235, top: 735, right: 267, bottom: 767, width: 32, height: 32 });
   dom.window.document.body.append(help);
   await delay(15);
-  assert.equal(dom.window.document.getElementById("blackbox-native-launcher")?.nextElementSibling, help);
-  dom.window.Blackbox.destroy();
+  assert.equal(dom.window.document.getElementById("bettercodex-native-launcher")?.nextElementSibling, help);
+  dom.window.BetterCodex.destroy();
 });

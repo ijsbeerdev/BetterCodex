@@ -14,7 +14,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
           <div class="sidebar-item"><button type="button"><div><span><svg></svg></span><span class="text-fade-truncate">New chat</span></div></button><button aria-label="Quick chat"></button></div>
           <div class="sidebar-item selected"><button type="button" aria-current="page">Pull requests</button></div>
         </div>
-        <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-project-row data-app-action-sidebar-project-id="project-1" data-app-action-sidebar-project-label="blackbox">blackbox</div>
+        <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-project-row data-app-action-sidebar-project-id="project-1" data-app-action-sidebar-project-label="bettercodex">bettercodex</div>
         <div data-app-action-sidebar-project-list-id="project-1">
           <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:auth" data-app-action-sidebar-thread-title="Build authentication" data-app-action-sidebar-thread-active="true">
             <span>Build authentication</span><span role="status">Working</span><time datetime="2026-08-10T09:58:00Z">2m</time><button type="button" aria-label="More options for Build authentication"><svg></svg></button>
@@ -40,43 +40,43 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   });
 
   let registration;
-  dom.window.Blackbox = { register(value) { registration = value; } };
+  dom.window.BetterCodex = { register(value) { registration = value; } };
   dom.window.eval(source);
   assert.equal(registration.id, "project-kanban");
   t.after(() => registration?.stop());
-  dom.window.localStorage.setItem("blackbox.project-kanban.v1", JSON.stringify({
+  dom.window.localStorage.setItem("bettercodex.project-kanban.v1", JSON.stringify({
     version: 2,
     cards: [
-      { id: "plan-old", title: "Original plan title", project: "blackbox", status: "in-progress", progress: "Running", href: "thread:local:old", native: true, updatedAt: 1 },
-      { id: "chat:thread:missing", title: "No longer running", project: "blackbox", status: "in-progress", progress: "Running", href: "thread:missing", native: true, updatedAt: 1 }
+      { id: "plan-old", title: "Original plan title", project: "bettercodex", status: "in-progress", progress: "Running", href: "thread:local:old", native: true, updatedAt: 1 },
+      { id: "chat:thread:missing", title: "No longer running", project: "bettercodex", status: "in-progress", progress: "Running", href: "thread:missing", native: true, updatedAt: 1 }
     ]
   }));
 
   registration.start();
   await delay(10);
   const newChat = [...dom.window.document.querySelectorAll("button")].find((button) => button.textContent.trim() === "New chat");
-  const launcher = dom.window.document.querySelector("[data-blackbox-project-kanban-launcher]");
+  const launcher = dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher]");
   assert.ok(launcher);
   assert.match(launcher.textContent, /^Kanban$/);
   assert.notEqual(launcher.closest(".sidebar-item"), newChat.closest(".sidebar-item"));
   assert.equal(newChat.closest(".sidebar-item").nextElementSibling, launcher.closest(".sidebar-item"));
   assert.equal(launcher.closest(".sidebar-item").querySelectorAll("button").length, 1);
-  assert.equal(dom.window.document.querySelectorAll("[data-blackbox-project-kanban-launcher-row]").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("[data-bettercodex-project-kanban-launcher-row]").length, 1);
 
   launcher.click();
-  const root = dom.window.document.querySelector("[data-blackbox-project-kanban-root]");
+  const root = dom.window.document.querySelector("[data-bettercodex-project-kanban-root]");
   assert.equal(root.hidden, false);
   assert.equal(root.tagName, "MAIN");
   assert.equal(root.className, "native-main-surface");
-  assert.equal(root.previousElementSibling, dom.window.document.querySelector("main:not([data-blackbox-project-kanban-root])"));
+  assert.equal(root.previousElementSibling, dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])"));
   assert.equal(root.getAttribute("aria-label"), "Kanban");
   assert.equal(root.querySelector("form"), null);
   assert.equal(root.querySelector("button[aria-label*='Sync' i]"), null);
-  assert.equal(dom.window.document.querySelector("main:not([data-blackbox-project-kanban-root])").hidden, true);
+  assert.equal(dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])").hidden, true);
   assert.equal(dom.window.document.querySelector("aside").getAttribute("aria-hidden"), null);
   const pullRequests = [...dom.window.document.querySelectorAll("button")].find((button) => button.textContent.trim() === "Pull requests");
   assert.equal(pullRequests.getAttribute("aria-current"), "page");
-  assert.equal(pullRequests.closest(".sidebar-item").hasAttribute("data-blackbox-project-kanban-suppressed-nav"), true);
+  assert.equal(pullRequests.closest(".sidebar-item").hasAttribute("data-bettercodex-project-kanban-suppressed-nav"), true);
 
   assert.deepEqual(
     [...root.querySelectorAll(".bbpk-column-header > span:nth-child(2)")].map((node) => node.textContent),
@@ -87,7 +87,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.ok(runningCard instanceof dom.window.HTMLButtonElement);
   assert.equal(runningCard.type, "button");
   assert.match(runningCard.textContent, /Build authentication/);
-  assert.match(runningCard.textContent, /blackbox/);
+  assert.match(runningCard.textContent, /bettercodex/);
   assert.match(root.textContent, /ComfyUI/);
   assert.doesNotMatch(root.textContent, /Current project/);
   assert.match(runningCard.textContent, /2m/);
@@ -141,19 +141,19 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   projectRow.click();
   await delay(0);
   assert.equal(root.hidden, true);
-  assert.equal(dom.window.document.querySelector("main:not([data-blackbox-project-kanban-root])").hidden, false);
-  assert.equal(pullRequests.closest(".sidebar-item").hasAttribute("data-blackbox-project-kanban-suppressed-nav"), false);
+  assert.equal(dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])").hidden, false);
+  assert.equal(pullRequests.closest(".sidebar-item").hasAttribute("data-bettercodex-project-kanban-suppressed-nav"), false);
 
   registration.start();
   await delay(10);
-  assert.equal(dom.window.document.querySelectorAll("[data-blackbox-project-kanban-launcher]").length, 1);
-  assert.equal(dom.window.document.querySelectorAll("[data-blackbox-project-kanban-root]").length, 1);
-  assert.equal(dom.window.document.querySelectorAll("[data-blackbox-project-kanban-style]").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("[data-bettercodex-project-kanban-launcher]").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("[data-bettercodex-project-kanban-root]").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("[data-bettercodex-project-kanban-style]").length, 1);
 
   registration.stop();
   registration.stop();
-  assert.equal(dom.window.document.querySelector("[data-blackbox-project-kanban-launcher]"), null);
-  assert.equal(dom.window.document.querySelector("[data-blackbox-project-kanban-launcher-row]"), null);
-  assert.equal(dom.window.document.querySelector("[data-blackbox-project-kanban-root]"), null);
-  assert.equal(dom.window.document.querySelector("[data-blackbox-project-kanban-style]"), null);
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher]"), null);
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher-row]"), null);
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-root]"), null);
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-style]"), null);
 });

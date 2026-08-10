@@ -26,14 +26,14 @@ test("bundled add-ons load and Hot Reload cleans up when disabled", async () => 
   dom.window.matchMedia = () => ({ matches: false });
   dom.window.requestAnimationFrame = (callback) => { callback(); return 1; };
   dom.window.eval(clientSource);
-  dom.window.__BLACKBOX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
+  dom.window.__BETTERCODEX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
   await delay(25);
-  assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, true);
-  assert.ok(dom.window.document.getElementById("blackbox-native-launcher"));
-  dom.window.Blackbox.setEnabled("hot-reload", false);
-  assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, undefined);
-  assert.ok(dom.window.document.getElementById("blackbox-native-launcher"));
-  dom.window.Blackbox.destroy();
+  assert.equal(dom.window.__BETTERCODEX_HOT_RELOAD_ACTIVE__, true);
+  assert.ok(dom.window.document.getElementById("bettercodex-native-launcher"));
+  dom.window.BetterCodex.setEnabled("hot-reload", false);
+  assert.equal(dom.window.__BETTERCODEX_HOT_RELOAD_ACTIVE__, undefined);
+  assert.ok(dom.window.document.getElementById("bettercodex-native-launcher"));
+  dom.window.BetterCodex.destroy();
 });
 
 test("add-on file events are debounced", async () => {
@@ -73,7 +73,7 @@ test("file watching can disable recursive mode for the client bundle", () => {
 test("replaces the persistent injection script after evaluating the update", async () => {
   const calls = [];
   const connection = {
-    blackboxScriptIdentifier: "old-script",
+    bettercodexScriptIdentifier: "old-script",
     async send(method, params) {
       calls.push({ method, params });
       if (method === "Page.addScriptToEvaluateOnNewDocument") return { identifier: "new-script" };
@@ -82,7 +82,7 @@ test("replaces the persistent injection script after evaluating the update", asy
     }
   };
   await replaceInjection(connection, "new expression");
-  assert.equal(connection.blackboxScriptIdentifier, "new-script");
+  assert.equal(connection.bettercodexScriptIdentifier, "new-script");
   assert.deepEqual(calls.map(({ method }) => method), [
     "Page.addScriptToEvaluateOnNewDocument",
     "Runtime.evaluate",

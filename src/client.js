@@ -1,8 +1,8 @@
 (() => {
-  const ROOT_ID = "blackbox-client-root";
-  const LAUNCHER_ID = "blackbox-native-launcher";
-  const STORAGE_KEY = "blackbox:addons:v1";
-  const BOX_ICON = `<svg data-blackbox-box aria-hidden="true" class="icon-sm" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  const ROOT_ID = "bettercodex-client-root";
+  const LAUNCHER_ID = "bettercodex-native-launcher";
+  const STORAGE_KEY = "bettercodex:addons:v1";
+  const BOX_ICON = `<svg data-bettercodex-box aria-hidden="true" class="icon-sm" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
     <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path>
     <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"></path>
     <path d="M12 3v6"></path>
@@ -13,7 +13,7 @@
   const BRUSH_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"></path></svg>`;
 
   function install(payload) {
-    globalThis.Blackbox?.destroy?.();
+    globalThis.BetterCodex?.destroy?.();
     document.getElementById(ROOT_ID)?.remove();
     document.getElementById(LAUNCHER_ID)?.remove();
 
@@ -37,7 +37,7 @@
         implementation.start?.();
         active.add(id);
       } catch (error) {
-        console.error(`[Blackbox] Could not start ${id}`, error);
+        console.error(`[BetterCodex] Could not start ${id}`, error);
         stored[id] = false;
         save();
       }
@@ -46,7 +46,7 @@
     const stop = (id) => {
       if (!active.has(id)) return;
       try { implementations.get(id)?.stop?.(); }
-      catch (error) { console.error(`[Blackbox] Could not stop ${id}`, error); }
+      catch (error) { console.error(`[BetterCodex] Could not stop ${id}`, error); }
       active.delete(id);
     };
 
@@ -123,13 +123,13 @@
         @media (max-width:700px) { .sidebar { width:210px; min-width:180px; } .content { width:calc(100% - 32px); padding-top:64px; }
           .plugins { grid-template-columns:1fr; } }
       </style>
-      <div class="view" role="dialog" aria-modal="true" aria-labelledby="blackbox-title">
+      <div class="view" role="dialog" aria-modal="true" aria-labelledby="bettercodex-title">
         <aside class="sidebar">
           <button class="back" type="button" aria-label="Back to app">${BACK_ICON}<span>Back to app</span></button>
-          <nav class="nav-group" aria-label="Blackbox settings">
-            <div class="nav-heading">Blackbox settings</div>
-            <button class="nav active" type="button" aria-current="page" data-target="blackbox">
-              <span class="nav-icon">${COG_ICON}</span><span class="nav-label">Blackbox</span>
+          <nav class="nav-group" aria-label="BetterCodex settings">
+            <div class="nav-heading">BetterCodex settings</div>
+            <button class="nav active" type="button" aria-current="page" data-target="bettercodex">
+              <span class="nav-icon">${COG_ICON}</span><span class="nav-label">BetterCodex</span>
             </button>
             <button class="nav" type="button" data-target="plugins">
               <span class="nav-icon">${PLUG_ICON}</span><span class="nav-label">Plugins</span>
@@ -141,10 +141,10 @@
         </aside>
         <main class="main">
           <div class="content">
-            <h1 id="blackbox-title">Blackbox</h1>
-            <section class="section" id="blackbox"><h2>Blackbox</h2><div class="card">
-              <div class="row"><div class="copy"><div class="name">Version</div><div class="description">Installed Blackbox runtime</div></div><div class="version">${escapeHtml(payload.version)}</div></div>
-              <div class="row"><div class="copy"><div class="name">Source code</div><div class="description">View Blackbox on GitHub</div></div>
+            <h1 id="bettercodex-title">BetterCodex</h1>
+            <section class="section" id="bettercodex"><h2>BetterCodex</h2><div class="card">
+              <div class="row"><div class="copy"><div class="name">Version</div><div class="description">Installed BetterCodex runtime</div></div><div class="version">${escapeHtml(payload.version)}</div></div>
+              <div class="row"><div class="copy"><div class="name">Source code</div><div class="description">View BetterCodex on GitHub</div></div>
                 <a class="repo" href="${escapeAttribute(payload.repository)}" target="_blank" rel="noreferrer">Open ↗</a></div>
             </div></section>
             <section class="section" id="plugins" hidden><h2>Plugins</h2><div class="plugins"></div></section>
@@ -188,7 +188,7 @@
       const dark = document.documentElement.classList.contains("electron-dark") ||
         (!document.documentElement.classList.contains("electron-light") && prefersDark);
       host.dataset.theme = dark ? "dark" : "light";
-      launcher?.querySelector("[data-blackbox-box]")?.style.setProperty("color", dark ? "#fff" : "#000");
+      launcher?.querySelector("[data-bettercodex-box]")?.style.setProperty("color", dark ? "#fff" : "#000");
     };
     const open = () => {
       syncHostBounds();
@@ -225,28 +225,28 @@
       }
     };
     const buildAddonRequirements = () => {
-      const target = payload.addonsPath || "the addons directory inside this Blackbox installation";
-      return `# Blackbox add-on requirements\n\n` +
+      const target = payload.addonsPath || "the addons directory inside this BetterCodex installation";
+      return `# BetterCodex add-on requirements\n\n` +
         `Create and install the add-on in this target directory: ${target}\n\n` +
         `Use the user's message as the requested add-on behavior. This attachment is the implementation contract; the user should not need to repeat any of it.\n\n` +
         `## Product boundaries\n\n` +
-        `Blackbox is a Vencord-style runtime patcher for the official Codex Windows app. Work only inside the target add-ons directory. Do not create a standalone app, Codex marketplace plugin, skill, MCP server, or browser extension. Do not modify Codex executables, signed MSIX files, app.asar, update settings, launcher behavior, or Blackbox core unless the user explicitly asks for a core change. Never copy or redistribute Codex source bundles.\n\n` +
+        `BetterCodex is a runtime patcher for the official ChatGPT Codex Windows app. Work only inside the target add-ons directory. Do not create a standalone app, Codex marketplace plugin, skill, MCP server, or browser extension. Do not modify Codex executables, signed MSIX files, app.asar, update settings, launcher behavior, or BetterCodex core unless the user explicitly asks for a core change. Never copy or redistribute Codex source bundles.\n\n` +
         `## Add-on structure\n\n` +
         `Inspect the existing sibling add-ons first and follow their current conventions. Create exactly one <kebab-case-id> directory directly under the target add-ons directory. It must contain manifest.json, index.js, and screenshot.svg. Do not add dependencies or a build step unless the requested feature cannot reasonably work without them. Keep the add-on self-contained.\n\n` +
-        `manifest.json must contain id, name, version, description, screenshot, and enabledByDefault. The id must exactly match the directory name and the id passed to Blackbox.register. Start a new add-on at version 0.1.0. Set screenshot to screenshot.svg. Write short, friendly copy suitable for the Blackbox settings page.\n\n` +
-        `index.js runs as classic browser JavaScript inside the Codex renderer. It has no imports, require(), module system, package dependencies, or Node.js APIs. Register it with Blackbox.register({ id, start, stop }). start() must be idempotent even if Blackbox hot-reloads it repeatedly. stop() must fully reverse the add-on: disconnect MutationObservers, clear timers, remove event listeners and injected DOM/style nodes, and restore every native node or attribute it changed. Keep state private to the add-on and use stable data attributes for anything injected.\n\n` +
+        `manifest.json must contain id, name, version, description, screenshot, and enabledByDefault. The id must exactly match the directory name and the id passed to BetterCodex.register. Start a new add-on at version 0.1.0. Set screenshot to screenshot.svg. Write short, friendly copy suitable for the BetterCodex settings page.\n\n` +
+        `index.js runs as classic browser JavaScript inside the Codex renderer. It has no imports, require(), module system, package dependencies, or Node.js APIs. Register it with BetterCodex.register({ id, start, stop }). start() must be idempotent even if BetterCodex hot-reloads it repeatedly. stop() must fully reverse the add-on: disconnect MutationObservers, clear timers, remove event listeners and injected DOM/style nodes, and restore every native node or attribute it changed. Keep state private to the add-on and use stable data attributes for anything injected.\n\n` +
         `Treat Codex's DOM as private and updateable. Prefer semantic attributes, accessible labels, and narrow structural checks over generated class names. Observe the smallest practical root, debounce or batch repeated scans, avoid polling when a MutationObserver works, and fail quietly if the expected UI is absent. Preserve native keyboard, focus, scrolling, approval, composer, and navigation behavior. Reuse Codex's visual language and CSS variables where available; support both light and dark themes.\n\n` +
-        `screenshot.svg must be a polished 640x280 preview of the feature as its card header. It should be valid standalone SVG, legible in Blackbox's dark settings UI, and contain no external assets, scripts, or remote fonts.\n\n` +
+        `screenshot.svg must be a polished 640x280 preview of the feature as its card header. It should be valid standalone SVG, legible in BetterCodex's dark settings UI, and contain no external assets, scripts, or remote fonts.\n\n` +
         `## Implementation approach\n\n` +
-        `Read every existing file in the closest sibling add-on that solves a similar kind of renderer problem before writing code. Reuse its lifecycle and defensive DOM patterns, but do not make one add-on depend on another. Keep constants and selectors near the top of index.js, keep start() and stop() easy to audit, and use small named helpers instead of one long mutation callback. Do not expose globals other than the required Blackbox registration. Avoid innerHTML for user-controlled data, avoid overriding native prototypes, and do not intercept broad click or keyboard events when a scoped listener will work.\n\n` +
+        `Read every existing file in the closest sibling add-on that solves a similar kind of renderer problem before writing code. Reuse its lifecycle and defensive DOM patterns, but do not make one add-on depend on another. Keep constants and selectors near the top of index.js, keep start() and stop() easy to audit, and use small named helpers instead of one long mutation callback. Do not expose globals other than the required BetterCodex registration. Avoid innerHTML for user-controlled data, avoid overriding native prototypes, and do not intercept broad click or keyboard events when a scoped listener will work.\n\n` +
         `If the feature injects a control, give it an accessible name, an obvious focus state, and behavior that works with keyboard as well as pointer input. Insert it only after the native anchor exists, never flash it over Codex's loading UI, and prevent duplicates during navigation or hot reload. If the feature moves or wraps native UI, record its original parent, sibling, styles, attributes, and state so stop() can put it back exactly. If it changes content automatically, handle both already-mounted content and content added later without fighting the user's own actions.\n\n` +
-        `Use a single owned style element when CSS is necessary and remove it during stop(). Scope every rule beneath a unique data-blackbox-* marker so it cannot leak into the rest of Codex. Prefer inherited fonts and currentColor. Avoid hard-coded page widths, theme backgrounds, and generated class names. Match Codex's compact spacing, borders, corner radii, hover states, and muted text rather than inventing a separate visual system. Do not show a custom toast, dialog, or settings surface unless it is essential to the requested behavior.\n\n` +
-        `Mutation work must stay cheap on long conversations. Filter MutationObserver records before scanning, query only the affected subtree where possible, and mark processed nodes. Do not run unbounded intervals, repeatedly rewrite unchanged DOM, or observe document attributes broadly. Any timeout, animation frame, observer, abort controller, and listener created by start() belongs to the add-on and must be cancelled by stop(). start(); start(); stop(); stop(); must be safe. Disabling the add-on in Blackbox settings must visibly restore Codex without requiring a reload.\n\n` +
+        `Use a single owned style element when CSS is necessary and remove it during stop(). Scope every rule beneath a unique data-bettercodex-* marker so it cannot leak into the rest of Codex. Prefer inherited fonts and currentColor. Avoid hard-coded page widths, theme backgrounds, and generated class names. Match Codex's compact spacing, borders, corner radii, hover states, and muted text rather than inventing a separate visual system. Do not show a custom toast, dialog, or settings surface unless it is essential to the requested behavior.\n\n` +
+        `Mutation work must stay cheap on long conversations. Filter MutationObserver records before scanning, query only the affected subtree where possible, and mark processed nodes. Do not run unbounded intervals, repeatedly rewrite unchanged DOM, or observe document attributes broadly. Any timeout, animation frame, observer, abort controller, and listener created by start() belongs to the add-on and must be cancelled by stop(). start(); start(); stop(); stop(); must be safe. Disabling the add-on in BetterCodex settings must visibly restore Codex without requiring a reload.\n\n` +
         `Do not silently broaden the requested feature. If a detail is ambiguous, choose the smallest behavior consistent with the user's prompt and existing Codex conventions. Ask a concise follow-up only when the missing choice would materially change the result. Do not replace native UI merely to restyle it; prefer moving, revealing, or augmenting the existing element. Never auto-send messages, approve commands, change permissions, select a project, or perform external actions unless that exact behavior is the requested add-on.\n\n` +
         `## Acceptance checklist\n\n` +
-        `Before finishing, confirm: the add-on appears in Blackbox settings with a working enable/disable toggle; enabledByDefault matches the safest expected first-run behavior; repeated start() calls create no duplicates; stop() leaves no owned DOM, styles, observers, listeners, or timers; navigation and newly mounted Codex UI are handled; absent or changed native UI causes no uncaught errors; light and dark themes remain readable; the screenshot accurately represents the feature; manifest and registration ids match; and no file outside the one add-on directory was changed unless a focused repository test truly required it.\n\n` +
+        `Before finishing, confirm: the add-on appears in BetterCodex settings with a working enable/disable toggle; enabledByDefault matches the safest expected first-run behavior; repeated start() calls create no duplicates; stop() leaves no owned DOM, styles, observers, listeners, or timers; navigation and newly mounted Codex UI are handled; absent or changed native UI causes no uncaught errors; light and dark themes remain readable; the screenshot accurately represents the feature; manifest and registration ids match; and no file outside the one add-on directory was changed unless a focused repository test truly required it.\n\n` +
         `## Verification\n\n` +
-        `Validate the manifest JSON and parse index.js. If this target is a Blackbox source checkout, add focused tests for behavior and cleanup when practical, then run the repository's available test and build commands. Do not weaken existing tests. Briefly report the files created, what the add-on does, and verification results. Do not commit, push, package, publish, or create a release.`;
+        `Validate the manifest JSON and parse index.js. If this target is a BetterCodex source checkout, add focused tests for behavior and cleanup when practical, then run the repository's available test and build commands. Do not weaken existing tests. Briefly report the files created, what the add-on does, and verification results. Do not commit, push, package, publish, or create a release.`;
     };
     const addonExamplePrompt = "Add an add-on that copies the latest assistant response.";
     const findProjectlessOption = () => [...document.querySelectorAll("button, [role='option'], [role='menuitem']")]
@@ -316,7 +316,7 @@
       version: payload.version,
       repository: payload.repository,
       register(implementation) {
-        if (!catalog.has(implementation?.id)) throw new Error(`Unknown Blackbox add-on: ${implementation?.id}`);
+        if (!catalog.has(implementation?.id)) throw new Error(`Unknown BetterCodex add-on: ${implementation?.id}`);
         implementations.set(implementation.id, implementation);
         if (isEnabled(implementation.id)) start(implementation.id);
       },
@@ -336,10 +336,10 @@
         if (document.body) document.body.style.overflow = previousOverflow;
         launcher?.remove();
         host.remove();
-        if (globalThis.Blackbox === api) delete globalThis.Blackbox;
+        if (globalThis.BetterCodex === api) delete globalThis.BetterCodex;
       }
     };
-    globalThis.Blackbox = api;
+    globalThis.BetterCodex = api;
 
     const findHelpButton = () => [...document.querySelectorAll("button")].find((element) => {
       const rect = element.getBoundingClientRect();
@@ -353,8 +353,8 @@
       launcher.id = LAUNCHER_ID;
       for (const attribute of ["aria-haspopup", "aria-expanded", "data-state", "data-disabled"]) launcher.removeAttribute(attribute);
       launcher.removeAttribute("disabled");
-      launcher.setAttribute("aria-label", "Open Blackbox");
-      launcher.title = "Blackbox";
+      launcher.setAttribute("aria-label", "Open BetterCodex");
+      launcher.title = "BetterCodex";
       launcher.innerHTML = BOX_ICON;
       launcher.addEventListener("click", open, { signal: controller.signal });
       help.before(launcher);
@@ -388,7 +388,7 @@
           if (selected) item.setAttribute("aria-current", "page"); else item.removeAttribute("aria-current");
         });
         shadow.querySelectorAll(".section").forEach((section) => { section.hidden = section.id !== nav.dataset.target; });
-        shadow.getElementById("blackbox-title").textContent = nav.querySelector(".nav-label").textContent.trim();
+        shadow.getElementById("bettercodex-title").textContent = nav.querySelector(".nav-label").textContent.trim();
         shadow.querySelector(".main").scrollTop = 0;
       }, { signal: controller.signal });
     }
@@ -405,7 +405,7 @@
 
     for (const addon of payload.addons) {
       try { (0, eval)(addon.source); }
-      catch (error) { console.error(`[Blackbox] Could not load ${addon.manifest.id}`, error); }
+      catch (error) { console.error(`[BetterCodex] Could not load ${addon.manifest.id}`, error); }
     }
     return true;
   }
@@ -415,5 +415,5 @@
   }
 
   function escapeAttribute(value) { return escapeHtml(value); }
-  globalThis.__BLACKBOX_INJECT__ = install;
+  globalThis.__BETTERCODEX_INJECT__ = install;
 })();

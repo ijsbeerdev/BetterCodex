@@ -1,12 +1,12 @@
 {
-  "name": "blackbox-codex-patcher",
+  "name": "bettercodex-codex-patcher",
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "A Vencord-style runtime mod loader for the Codex desktop app.",
+  "description": "A runtime mod loader for the ChatGPT Codex desktop app.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ijsbeerdev/blackbox.git"
+    "url": "https://github.com/ijsbeerdev/BetterCodex.git"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",

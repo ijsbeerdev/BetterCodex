@@ -1,6 +1,6 @@
 let approvalShelfCleanup = () => {};
 
-Blackbox.register({
+BetterCodex.register({
   id: "approval-shelf",
   start() {
     approvalShelfCleanup();
@@ -8,7 +8,7 @@ Blackbox.register({
     const SURFACE_SELECTOR = "[data-composer-radius-variant][data-composer-surface-variant]";
     const EDITOR_SELECTOR = "[data-codex-composer]";
     const APPROVAL_SELECTOR = "[data-codex-approval-surface]";
-    const PRESERVED_ATTRIBUTE = "data-blackbox-preserved-composer";
+    const PRESERVED_ATTRIBUTE = "data-bettercodex-preserved-composer";
     const state = {
       surface: null,
       editor: null,
@@ -19,7 +19,7 @@ Blackbox.register({
     };
 
     const findApproval = () => [...document.querySelectorAll(APPROVAL_SELECTOR)]
-      .findLast((element) => !element.closest("#blackbox-client-root"));
+      .findLast((element) => !element.closest("#bettercodex-client-root"));
 
     const rememberNativeComposer = (editor) => {
       const surface = editor?.closest(SURFACE_SELECTOR);
@@ -79,7 +79,7 @@ Blackbox.register({
     observer.observe(document.documentElement, { childList: true, subtree: true });
     rememberNativeComposer(document.querySelector(EDITOR_SELECTOR));
     sync();
-    globalThis.__BLACKBOX_APPROVAL_SHELF_ACTIVE__ = true;
+    globalThis.__BETTERCODEX_APPROVAL_SHELF_ACTIVE__ = true;
 
     approvalShelfCleanup = () => {
       if (state.stopped) return;
@@ -87,7 +87,7 @@ Blackbox.register({
       observer.disconnect();
       if (state.surface?.hasAttribute(PRESERVED_ATTRIBUTE)) state.surface.remove();
       state.surface?.removeAttribute(PRESERVED_ATTRIBUTE);
-      delete globalThis.__BLACKBOX_APPROVAL_SHELF_ACTIVE__;
+      delete globalThis.__BETTERCODEX_APPROVAL_SHELF_ACTIVE__;
     };
   },
   stop() {

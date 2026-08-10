@@ -6,12 +6,12 @@ param(
 $ErrorActionPreference = "Stop"
 $runtimeRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $startScript = Join-Path $runtimeRoot "start.ps1"
-$logPath = Join-Path $runtimeRoot "blackbox.log"
-$mutex = New-Object System.Threading.Mutex($false, "Local\BlackboxCodexWatcher")
+$logPath = Join-Path $runtimeRoot "bettercodex.log"
+$mutex = New-Object System.Threading.Mutex($false, "Local\BetterCodexCodexWatcher")
 
 if (-not $mutex.WaitOne(0)) { return }
 
-function Write-BlackboxLog([string]$message) {
+function Write-BetterCodexLog([string]$message) {
     Add-Content -LiteralPath $logPath -Value "$(Get-Date -Format o) [watcher] $message" -ErrorAction SilentlyContinue
 }
 
@@ -23,7 +23,7 @@ function Get-CodexRootProcess([int]$processId) {
 
 function Start-PatchedCodex([object]$process) {
     if ($process.CommandLine -match "--remote-debugging-port=") { return }
-    Write-BlackboxLog "Intercepting normal Codex launch (PID $($process.ProcessId))."
+    Write-BetterCodexLog "Intercepting normal Codex launch (PID $($process.ProcessId))."
     Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
     Wait-Process -Id $process.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
     Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
@@ -38,11 +38,11 @@ try {
     foreach ($process in $existing) {
         if ($IgnoreExisting) {
             [void]$seen.Add([int]$process.ProcessId)
-            Write-BlackboxLog "Leaving existing Codex PID $($process.ProcessId) untouched."
+            Write-BetterCodexLog "Leaving existing Codex PID $($process.ProcessId) untouched."
         }
     }
 
-    Write-BlackboxLog "Launch watcher ready."
+    Write-BetterCodexLog "Launch watcher ready."
     while ($true) {
         $roots = @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction SilentlyContinue |
             Where-Object { $_.CommandLine -notmatch "--type=" })
@@ -60,7 +60,7 @@ try {
         Start-Sleep -Milliseconds 750
     }
 } catch {
-    Write-BlackboxLog "Watcher failed: $($_.Exception.Message)"
+    Write-BetterCodexLog "Watcher failed: $($_.Exception.Message)"
 } finally {
     $mutex.ReleaseMutex()
     $mutex.Dispose()

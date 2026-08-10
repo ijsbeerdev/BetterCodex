@@ -27,4 +27,4 @@ await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
   addons: addons.map(({ manifest }) => manifest)
 }, null, 2)}\n`);
 
-console.log(`Built Blackbox ${packageInfo.version}${releaseBuild ? " release" : ""} with ${addons.length} add-on(s) in ${outputRoot}`);
+console.log(`Built BetterCodex ${packageInfo.version}${releaseBuild ? " release" : ""} with ${addons.length} add-on(s) in ${outputRoot}`);

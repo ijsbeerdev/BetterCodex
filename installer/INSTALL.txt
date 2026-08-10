@@ -1,11 +1,11 @@
-BLACKBOX FOR CODEX
+BETTERCODEX FOR CHATGPT CODEX
 
 1. Extract this entire ZIP to a folder.
-2. Double-click "Install Blackbox.cmd".
-3. Quit Codex completely, then open Codex normally.
+2. Double-click "Install BetterCodex.cmd".
+3. Quit ChatGPT Codex completely, then open it normally.
 4. Click the package icon beside the Help (?) button.
 
-To remove Blackbox, double-click "Uninstall Blackbox.cmd".
+To remove BetterCodex, double-click "Uninstall BetterCodex.cmd".
 
-Blackbox does not modify the signed Codex installation. It installs a reversible
+BetterCodex does not modify the signed ChatGPT Codex installation. It installs a reversible
 per-user launcher and runtime under Local AppData.

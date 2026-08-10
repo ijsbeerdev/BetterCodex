@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { loadAddons, validateManifest } from "../src/catalog.mjs";
 
 test("loads a validated add-on catalog", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blackbox-catalog-"));
+  const root = await mkdtemp(join(tmpdir(), "bettercodex-catalog-"));
   try {
     const addonRoot = join(root, "hello-world");
     await mkdir(addonRoot);
@@ -14,12 +14,12 @@ test("loads a validated add-on catalog", async () => {
       id: "hello-world", name: "Hello world", version: "1.2.3", description: "A test add-on.",
       screenshot: "screenshot.svg", enabledByDefault: true
     }));
-    await writeFile(join(addonRoot, "index.js"), "Blackbox.register({ id: 'hello-world' });");
+    await writeFile(join(addonRoot, "index.js"), "BetterCodex.register({ id: 'hello-world' });");
     await writeFile(join(addonRoot, "screenshot.svg"), "<svg xmlns='http://www.w3.org/2000/svg'></svg>");
     const [addon] = await loadAddons(root);
     assert.equal(addon.manifest.id, "hello-world");
     assert.match(addon.screenshot, /^data:image\/svg\+xml;base64,/);
-    assert.match(addon.source, /blackbox-addon:\/\/hello-world/);
+    assert.match(addon.source, /bettercodex-addon:\/\/hello-world/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
