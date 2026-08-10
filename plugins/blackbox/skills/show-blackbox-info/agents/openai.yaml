@@ -1,4 +1,0 @@
-interface:
-  display_name: "Blackbox"
-  short_description: "Show Blackbox version and repository information"
-  default_prompt: "Show the installed Blackbox version and repository link."

@@ -1,24 +1,36 @@
 # Blackbox
 
-Blackbox is now a native Codex plugin. The standalone Astro/React app was retired in commit `421df55` and remains recoverable from Git history.
+Blackbox is a Vencord-style client mod for the official Codex Windows app. Patch once, keep receiving Codex updates, and launch **Blackbox for Codex** to get a Blackbox button in the bottom-left sidebar.
 
-## Install
+Blackbox does not rewrite Codex's signed MSIX package or `app.asar`. Its launcher finds the newest installed Codex version, starts the official executable with a loopback-only debugging endpoint, then injects the Blackbox UI at runtime.
 
-```powershell
-.\scripts\install.ps1 -Replace
-```
-
-Fully restart the ChatGPT desktop app, open **Plugins**, choose **Blackbox**, and install or enable it. The native plugin details view shows Blackbox `1.0.0` and links to this repository. In a conversation, invoke `$show-blackbox-info` for the same compact information card.
-
-To unregister Blackbox without deleting the repository:
+## Patch
 
 ```powershell
-.\scripts\uninstall.ps1
+npm install
+npm run build
+powershell -ExecutionPolicy Bypass -File .\scripts\patch.ps1
 ```
 
-## Why there is no renderer patch
+Quit Codex completely, then open **Blackbox for Codex** from the Desktop or Start menu. The original Codex shortcut remains untouched.
 
-The official Codex plugin contract supports skills, hooks, MCP servers, and MCP-backed UI. It does not expose a persistent bottom-left navigation slot. Blackbox therefore uses the native Plugins surface and does not modify `app.asar`, the signed Microsoft Store package, or Codex update settings. Codex continues to update normally.
+The bottom-left Blackbox button opens a compact panel containing:
+
+- the installed Blackbox version;
+- a link to the source repository;
+- enable/disable switches for every installed Blackbox add-on.
+
+## Add-ons
+
+Each add-on lives in `addons/<id>/` and contains a `manifest.json` plus `index.js`. Add-on code registers itself with `Blackbox.register({ id, start, stop })`. Disabled state is persisted in Codex's local storage and `stop()` is called immediately when an add-on is turned off.
+
+## Unpatch
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\unpatch.ps1
+```
+
+Unpatching removes the Blackbox runtime and shortcuts only. It never modifies or removes the official Codex app.
 
 ## Develop
 
@@ -27,4 +39,4 @@ npm test
 npm run build
 ```
 
-The distributable marketplace is written to `dist/`.
+This is an unofficial client modification. The injection layer may need an update when Codex changes its renderer.

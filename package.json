@@ -1,11 +1,21 @@
 {
-  "name": "blackbox-codex-plugin",
+  "name": "blackbox-codex-patcher",
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "A Vencord-style runtime mod loader for the Codex desktop app.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ijsbeerdev/blackbox.git"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "patch": "powershell -ExecutionPolicy Bypass -File scripts/patch.ps1",
+    "unpatch": "powershell -ExecutionPolicy Bypass -File scripts/unpatch.ps1"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
   },
   "engines": {
     "node": ">=22"

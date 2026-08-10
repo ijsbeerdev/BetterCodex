@@ -1,21 +1,25 @@
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateRepository } from "./validate.mjs";
+import { loadAddons } from "../src/catalog.mjs";
 
-const scriptsRoot = dirname(fileURLToPath(import.meta.url));
-const repoRoot = dirname(scriptsRoot);
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outputRoot = join(repoRoot, "dist");
-const { plugin } = validateRepository(repoRoot);
+const packageInfo = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
+const addons = await loadAddons(join(repoRoot, "addons"));
 
-rmSync(outputRoot, { recursive: true, force: true });
-mkdirSync(join(outputRoot, ".agents", "plugins"), { recursive: true });
-mkdirSync(join(outputRoot, "plugins"), { recursive: true });
-cpSync(join(repoRoot, ".agents", "plugins", "marketplace.json"), join(outputRoot, ".agents", "plugins", "marketplace.json"));
-cpSync(join(repoRoot, "plugins", "blackbox"), join(outputRoot, "plugins", "blackbox"), { recursive: true });
-writeFileSync(
-  join(outputRoot, "build.json"),
-  `${JSON.stringify({ name: plugin.name, version: plugin.version, repository: plugin.repository }, null, 2)}\n`
-);
+await rm(outputRoot, { recursive: true, force: true });
+await mkdir(outputRoot, { recursive: true });
+for (const file of ["catalog.mjs", "cdp.mjs", "client.js", "launcher.mjs", "start.ps1"]) {
+  await cp(join(repoRoot, "src", file), join(outputRoot, file));
+}
+await cp(join(repoRoot, "addons"), join(outputRoot, "addons"), { recursive: true });
+await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
+  name: packageInfo.name,
+  version: packageInfo.version,
+  repository: packageInfo.repository,
+  type: "module",
+  addons: addons.map(({ manifest }) => manifest)
+}, null, 2)}\n`);
 
-console.log(`Built ${plugin.name}@${plugin.version} in ${outputRoot}`);
+console.log(`Built Blackbox ${packageInfo.version} with ${addons.length} add-on(s) in ${outputRoot}`);

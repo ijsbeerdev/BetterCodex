@@ -1,0 +1,7 @@
+{
+  "id": "cozy-glow",
+  "name": "Cozy glow",
+  "version": "1.0.0",
+  "description": "Gives the Blackbox button a soft violet glow.",
+  "enabledByDefault": true
+}

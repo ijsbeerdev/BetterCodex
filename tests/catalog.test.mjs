@@ -1,0 +1,28 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { loadAddons, validateManifest } from "../src/catalog.mjs";
+
+test("loads a validated add-on catalog", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blackbox-catalog-"));
+  try {
+    const addonRoot = join(root, "hello-world");
+    await mkdir(addonRoot);
+    await writeFile(join(addonRoot, "manifest.json"), JSON.stringify({
+      id: "hello-world", name: "Hello world", version: "1.2.3", description: "A test add-on.", enabledByDefault: true
+    }));
+    await writeFile(join(addonRoot, "index.js"), "Blackbox.register({ id: 'hello-world' });");
+    const [addon] = await loadAddons(root);
+    assert.equal(addon.manifest.id, "hello-world");
+    assert.match(addon.source, /blackbox-addon:\/\/hello-world/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects invalid or mismatched manifests", () => {
+  assert.throws(() => validateManifest({ id: "Bad ID", name: "Bad", version: "1", description: "No" }), /kebab-case/);
+  assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No" }, "two"), /match folder/);
+});

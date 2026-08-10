@@ -1,7 +1,9 @@
 # Blackbox agent guidance
 
-Blackbox is a Codex-native plugin marketplace. Do not recreate a standalone web app and do not patch Codex executables, `app.asar`, signed Windows package files, or update settings.
+Blackbox is a Vencord-style runtime patcher for the official Codex Windows app. Do not recreate a standalone web app and do not rewrite Codex executables, signed MSIX files, `app.asar`, or update settings.
 
-Keep user-visible metadata in `plugins/blackbox/.codex-plugin/plugin.json`. Keep the marketplace entry in `.agents/plugins/marketplace.json`. Every capability must be installable, disableable, and removable through Codex's native Plugins UI.
+Keep the injected UI in `src/client.js`, the launcher and CDP transport in `src/launcher.mjs` and `src/cdp.mjs`, and add-ons under `addons/<id>/`. Machine-level installation changes belong in `scripts/patch.ps1` and `scripts/unpatch.ps1` and must remain reversible.
 
-Keep copy and presentation cozy and compact. Before handing off changes, run `npm test`, `npm run build`, the skill validator, and the plugin validator.
+Every add-on needs a manifest, a visible enable/disable control, and a cleanup-capable `stop()` implementation. Keep copy and presentation cozy and compact.
+
+Before handing off changes, run `npm test` and `npm run build`.
