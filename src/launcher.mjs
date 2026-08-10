@@ -1,5 +1,5 @@
 import { execFile, execFileSync, spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { appendFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { injectTarget } from "./cdp.mjs";
@@ -12,6 +12,11 @@ const addons = await loadAddons(join(runtimeRoot, "addons"));
 const port = Number(process.env.BLACKBOX_DEBUG_PORT || 11983);
 const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addons };
 const expression = `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
+
+async function log(message) {
+  const line = `${new Date().toISOString()} [launcher] ${message}\n`;
+  try { await appendFile(join(runtimeRoot, "blackbox.log"), line); } catch {}
+}
 
 function powershell(script) {
   return execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" }).trim();
@@ -50,6 +55,7 @@ async function waitForDebugger() {
 }
 
 async function main() {
+  await log(`Starting Blackbox ${packageInfo.version}.`);
   let targets;
   let child;
   try { targets = await getTargets(); }
@@ -60,6 +66,7 @@ async function main() {
       return;
     }
     const executable = resolveCodexExecutable();
+    await log(`Launching ${executable} with debugger port ${port}.`);
     child = spawn(executable, [
       `--remote-debugging-port=${port}`,
       "--remote-debugging-address=127.0.0.1",
@@ -77,8 +84,12 @@ async function main() {
       for (const target of targets) {
         if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
         if (sessions.has(target.id)) continue;
-        try { sessions.set(target.id, await injectTarget(target, expression)); }
-        catch (error) { console.error(`[Blackbox] Skipped renderer ${target.id}: ${error.message}`); }
+        try {
+          sessions.set(target.id, await injectTarget(target, expression));
+          await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
+        } catch (error) {
+          await log(`Skipped renderer ${target.id}: ${error.message}`);
+        }
       }
       for (const [id, session] of sessions) {
         if (!targets.some((target) => target.id === id)) { session.close(); sessions.delete(id); }
@@ -91,6 +102,7 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
+  log(`Fatal error: ${error.stack || error.message}`);
   showMessage(`Blackbox could not start:\n\n${error.message}`);
   process.exitCode = 1;
 });

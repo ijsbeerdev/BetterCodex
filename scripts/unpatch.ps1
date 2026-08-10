@@ -6,8 +6,15 @@ $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
 $installRoot = Join-Path $localAppData "Blackbox"
 $shortcuts = @(
     (Join-Path ([Environment]::GetFolderPath("Programs")) "Blackbox for Codex.lnk"),
-    (Join-Path ([Environment]::GetFolderPath("Desktop")) "Blackbox for Codex.lnk")
+    (Join-Path ([Environment]::GetFolderPath("Desktop")) "Blackbox for Codex.lnk"),
+    (Join-Path ([Environment]::GetFolderPath("Startup")) "Blackbox Codex Watcher.lnk")
 )
+
+if ($PSCmdlet.ShouldProcess("Blackbox launch watcher", "Stop the running watcher")) {
+    Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*${installRoot}\watcher.ps1*" } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
 
 foreach ($shortcut in $shortcuts) {
     if ((Test-Path -LiteralPath $shortcut) -and $PSCmdlet.ShouldProcess($shortcut, "Remove Blackbox shortcut")) {
