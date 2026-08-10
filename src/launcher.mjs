@@ -1,17 +1,33 @@
-import { execFile, execFileSync, spawn } from "node:child_process";
-import { appendFile, readFile } from "node:fs/promises";
+import { execFileSync, spawn } from "node:child_process";
+import { access, appendFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { injectTarget } from "./cdp.mjs";
+import { injectTarget, replaceInjection } from "./cdp.mjs";
 import { loadAddons } from "./catalog.mjs";
+import { watchAddons } from "./hot-reload.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
 const clientSource = await readFile(join(runtimeRoot, "client.js"), "utf8");
-const addons = await loadAddons(join(runtimeRoot, "addons"));
 const port = Number(process.env.BLACKBOX_DEBUG_PORT || 11983);
-const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addons };
-const expression = `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
+
+async function resolveAddonsRoot() {
+  const developmentRoot = packageInfo.developmentAddonsPath;
+  if (developmentRoot) {
+    try { await access(developmentRoot); return developmentRoot; } catch {}
+  }
+  return join(runtimeRoot, "addons");
+}
+
+const addonsRoot = await resolveAddonsRoot();
+
+async function createExpression() {
+  const addons = await loadAddons(addonsRoot);
+  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addons };
+  return `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
+}
+
+let currentExpression = await createExpression();
 
 async function log(message) {
   const line = `${new Date().toISOString()} [launcher] ${message}\n`;
@@ -37,7 +53,12 @@ function codexIsRunning() {
 function showMessage(message, title = "Blackbox") {
   const encoded = Buffer.from(message, "utf16le").toString("base64");
   const script = `Add-Type -AssemblyName PresentationFramework; $m=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encoded}')); [System.Windows.MessageBox]::Show($m,'${title}') | Out-Null`;
-  execFile("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", script], () => {});
+  const notification = spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", script], {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true
+  });
+  notification.unref();
 }
 
 async function getTargets() {
@@ -55,7 +76,7 @@ async function waitForDebugger() {
 }
 
 async function main() {
-  await log(`Starting Blackbox ${packageInfo.version}.`);
+  await log(`Starting Blackbox ${packageInfo.version}; watching add-ons in ${addonsRoot}.`);
   let targets;
   let child;
   try { targets = await getTargets(); }
@@ -76,6 +97,30 @@ async function main() {
   }
 
   const sessions = new Map();
+  let reloadQueue = Promise.resolve();
+  let addonWatcher;
+  try {
+    addonWatcher = watchAddons(addonsRoot, ({ eventType, filename }) => {
+      reloadQueue = reloadQueue.then(async () => {
+        const nextExpression = await createExpression();
+        let reloaded = 0;
+        for (const session of sessions.values()) {
+          const state = await session.send("Runtime.evaluate", {
+            expression: "Boolean(globalThis.__BLACKBOX_HOT_RELOAD_ACTIVE__)",
+            returnByValue: true
+          });
+          if (state.result?.value !== true) continue;
+          await replaceInjection(session, nextExpression);
+          reloaded += 1;
+        }
+        if (reloaded > 0) currentExpression = nextExpression;
+        await log(`Hot reload ${eventType} ${filename}: refreshed ${reloaded} renderer(s).`);
+      }).catch((error) => log(`Hot reload failed: ${error.message}`));
+    });
+  } catch (error) {
+    await log(`Could not watch add-ons: ${error.message}`);
+  }
+
   let failures = 0;
   while (failures < 20 && !child?.killed) {
     try {
@@ -85,7 +130,7 @@ async function main() {
         if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
         if (sessions.has(target.id)) continue;
         try {
-          sessions.set(target.id, await injectTarget(target, expression));
+          sessions.set(target.id, await injectTarget(target, currentExpression));
           await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
         } catch (error) {
           await log(`Skipped renderer ${target.id}: ${error.message}`);
@@ -97,6 +142,8 @@ async function main() {
     } catch { failures += 1; }
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
+  addonWatcher?.close();
+  await reloadQueue;
   for (const session of sessions.values()) session.close();
 }
 

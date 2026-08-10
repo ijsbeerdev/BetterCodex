@@ -10,7 +10,7 @@ const addons = await loadAddons(join(repoRoot, "addons"));
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
-for (const file of ["catalog.mjs", "cdp.mjs", "client.js", "launcher.mjs", "start.ps1", "watcher.ps1"]) {
+for (const file of ["catalog.mjs", "cdp.mjs", "client.js", "hot-reload.mjs", "launcher.mjs", "start.ps1", "watcher.ps1"]) {
   await cp(join(repoRoot, "src", file), join(outputRoot, file));
 }
 await cp(join(repoRoot, "addons"), join(outputRoot, "addons"), { recursive: true });
@@ -19,6 +19,7 @@ await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
   version: packageInfo.version,
   repository: packageInfo.repository,
   type: "module",
+  developmentAddonsPath: join(repoRoot, "addons"),
   addons: addons.map(({ manifest }) => manifest)
 }, null, 2)}\n`);
 

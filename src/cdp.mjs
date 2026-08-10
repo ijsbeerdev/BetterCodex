@@ -45,7 +45,18 @@ export class CdpConnection {
 export async function injectTarget(target, expression) {
   const connection = await new CdpConnection(target.webSocketDebuggerUrl).connect();
   try {
-    await connection.send("Page.addScriptToEvaluateOnNewDocument", { source: expression });
+    await replaceInjection(connection, expression);
+    return connection;
+  } catch (error) {
+    connection.close();
+    throw error;
+  }
+}
+
+export async function replaceInjection(connection, expression) {
+  const previousIdentifier = connection.blackboxScriptIdentifier;
+  const registration = await connection.send("Page.addScriptToEvaluateOnNewDocument", { source: expression });
+  try {
     const result = await connection.send("Runtime.evaluate", {
       expression,
       awaitPromise: true,
@@ -53,9 +64,15 @@ export async function injectTarget(target, expression) {
       userGesture: true
     });
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || "Renderer rejected Blackbox");
-    return connection;
+    connection.blackboxScriptIdentifier = registration.identifier;
+    if (previousIdentifier) {
+      await connection.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: previousIdentifier });
+    }
+    return true;
   } catch (error) {
-    connection.close();
+    if (registration.identifier) {
+      await connection.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: registration.identifier }).catch(() => {});
+    }
     throw error;
   }
 }

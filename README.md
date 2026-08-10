@@ -20,6 +20,10 @@ The bottom-left Blackbox button opens a compact panel containing:
 - a link to the source repository;
 - enable/disable switches for every installed Blackbox add-on.
 
+## Hot Reload
+
+Hot Reload is Blackbox's first bundled add-on and is enabled by default. While Codex is open, changes inside this repository's `addons/` directory are debounced and reinjected into every Blackbox renderer. Add, edit, or remove an add-on without restarting Codex. Turn **Hot Reload** off in the Blackbox panel to pause file watching for the renderer.
+
 ## Add-ons
 
 Each add-on lives in `addons/<id>/` and contains a `manifest.json` plus `index.js`. Add-on code registers itself with `Blackbox.register({ id, start, stop })`. Disabled state is persisted in Codex's local storage and `stop()` is called immediately when an add-on is turned off.

@@ -10,10 +10,16 @@ $shortcuts = @(
     (Join-Path ([Environment]::GetFolderPath("Startup")) "Blackbox Codex Watcher.lnk")
 )
 
-if ($PSCmdlet.ShouldProcess("Blackbox launch watcher", "Stop the running watcher")) {
-    Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -like "*${installRoot}\watcher.ps1*" } |
-        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+if ($PSCmdlet.ShouldProcess("Blackbox runtime processes", "Stop the running Blackbox runtime")) {
+    $runtimeProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.CommandLine -like "*${installRoot}\watcher.ps1*" -or
+            $_.CommandLine -like "*${installRoot}\start.ps1*" -or
+            $_.CommandLine -like "*${installRoot}\launcher.mjs*"
+        } |
+        Select-Object -ExpandProperty ProcessId)
+    foreach ($processId in $runtimeProcesses) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue }
+    foreach ($processId in $runtimeProcesses) { Wait-Process -Id $processId -Timeout 10 -ErrorAction SilentlyContinue }
 }
 
 foreach ($shortcut in $shortcuts) {
