@@ -11,7 +11,7 @@
   <img alt="Unofficial ChatGPT Codex mod" src="https://img.shields.io/badge/ChatGPT%20Codex-unofficial%20mod-111111?style=flat-square">
 </p>
 
-BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewriting the signed app package or `app.asar`. Install it once, keep receiving normal ChatGPT Codex updates, and open its compact settings hub from the package icon beside **Help**.
+BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewriting the signed app package or `app.asar`. Install it once, keep receiving normal ChatGPT Codex updates, and open its compact settings hub from the robot icon beside **Help**.
 
 > [!NOTE]
 > BetterCodex is an unofficial community project and is not affiliated with or endorsed by OpenAI.
@@ -21,20 +21,22 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 - **Launch Codex normally** — the per-user watcher handles injection from your existing Start menu or taskbar shortcut.
 - **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
 - **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
+- **Update checks** — check the latest GitHub release from BetterCodex settings and jump straight to it when an update is available.
 - **Instant development** — edit the client or an add-on and Hot Reload reinjects the change without restarting Codex.
 - **Built-in add-on generation** — start a focused Codex task with the exact scaffold, lifecycle, and installation requirements already attached.
 - **Clean removal** — uninstalling removes the watcher, shortcuts, and BetterCodex runtime while leaving Codex alone.
 
-## 🧩 Included add-ons
+## 🧩 Included add-ons, tweaks, and themes
 
-| Add-on | What it does |
-| --- | --- |
-| **Kanban** | Groups Codex tasks by live activity, approval state, completion, and code-change totals. |
-| **Approval Shelf** | Keeps Codex's real composer and draft visible beneath approval prompts. |
-| **Auto Expand Activity** | Automatically opens collapsed command and file-edit activity in conversations. |
-| **Hot Reload** | Watches the client and add-on files, then refreshes every active renderer as you build. |
+| Category | Feature | What it does |
+| --- | --- | --- |
+| Add-on | **Kanban** | Groups Codex tasks by live activity, approval state, completion, and code-change totals. |
+| Theme | **CLI** | Turns Codex into a phosphor terminal with monospace type, scanlines, and command-line color. |
+| Tweak | **Approval Shelf** | Keeps Codex's real composer and draft visible beneath approval prompts. |
+| Tweak | **Auto Expand Activity** | Automatically opens collapsed command and file-edit activity in conversations. |
+| Tweak | **Hot Reload** | Watches the client and add-on files, then refreshes every active renderer as you build. |
 
-All included add-ons are enabled by default and can be toggled independently from **BetterCodex settings → Plugins**.
+Included add-ons and tweaks are enabled by default. Themes are opt-in, and every feature can be toggled independently from **BetterCodex settings**.
 
 <table>
   <tr>
@@ -44,6 +46,9 @@ All included add-ons are enabled by default and can be toggled independently fro
   <tr>
     <td width="50%"><img src="addons/auto-expand-activity/screenshot.svg" alt="Auto Expand Activity add-on preview"><br><strong>Auto Expand Activity</strong></td>
     <td width="50%"><img src="addons/hot-reload/screenshot.svg" alt="Hot Reload add-on preview"><br><strong>Hot Reload</strong></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="addons/cli-theme/screenshot.svg" alt="CLI theme preview" width="50%"><br><strong>CLI</strong></td>
   </tr>
 </table>
 
@@ -58,7 +63,7 @@ All included add-ons are enabled by default and can be toggled independently fro
 The release includes its own verified portable runtime, so users do not need Node.js or npm. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached. A separate **BetterCodex for ChatGPT Codex** shortcut is also installed as a fallback.
 
 > [!TIP]
-> After installation, look for the package icon beside **Help** in the bottom-left account toolbar.
+> After installation, look for the robot icon beside **Help** in the bottom-left account toolbar.
 
 ## 🛠️ Build from source
 
@@ -92,7 +97,7 @@ addons/my-addon/
 └── screenshot.svg
 ```
 
-Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, default state, and screenshot shown in BetterCodex settings.
+Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, default state, screenshot, and an `addon`, `tweak`, or `theme` category shown in BetterCodex settings.
 
 The built-in **Generate addon** action can open a fresh Codex task with the target directory and complete implementation requirements attached—just describe the feature you want.
 

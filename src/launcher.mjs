@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { injectTarget, replaceInjection } from "./cdp.mjs";
 import { loadAddons } from "./catalog.mjs";
 import { watchAddons } from "./hot-reload.mjs";
+import { installUpdateBridge } from "./updates.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
@@ -145,7 +146,8 @@ async function main() {
         if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
         if (!sessions.has(target.id)) {
           try {
-            sessions.set(target.id, await injectTarget(target, currentExpression));
+            sessions.set(target.id, await injectTarget(target, currentExpression, (connection) =>
+              installUpdateBridge(connection, packageInfo.repository.url)));
             await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
           } catch (error) {
             await log(`Skipped renderer ${target.id}: ${error.message}`);

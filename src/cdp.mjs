@@ -3,6 +3,7 @@ export class CdpConnection {
     this.url = url;
     this.nextId = 1;
     this.pending = new Map();
+    this.listeners = new Map();
   }
 
   async connect() {
@@ -27,12 +28,28 @@ export class CdpConnection {
     });
   }
 
+  on(method, listener) {
+    const listeners = this.listeners.get(method) || new Set();
+    listeners.add(listener);
+    this.listeners.set(method, listeners);
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) this.listeners.delete(method);
+    };
+  }
+
   close() {
     this.socket?.close();
   }
 
   #onMessage(event) {
     const message = JSON.parse(String(event.data));
+    if (message.method) {
+      for (const listener of this.listeners.get(message.method) || []) {
+        try { Promise.resolve(listener(message.params || {})).catch(() => {}); } catch {}
+      }
+      return;
+    }
     if (!message.id || !this.pending.has(message.id)) return;
     const pending = this.pending.get(message.id);
     this.pending.delete(message.id);
@@ -42,9 +59,10 @@ export class CdpConnection {
   }
 }
 
-export async function injectTarget(target, expression) {
+export async function injectTarget(target, expression, prepare) {
   const connection = await new CdpConnection(target.webSocketDebuggerUrl).connect();
   try {
+    await prepare?.(connection);
     await replaceInjection(connection, expression);
     return connection;
   } catch (error) {

@@ -17,6 +17,9 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   for (const field of ["name", "version", "description"]) {
     if (typeof manifest[field] !== "string" || !manifest[field].trim()) throw new Error(`Add-on ${manifest.id} needs ${field}`);
   }
+  if (manifest.category !== undefined && !["addon", "tweak", "theme"].includes(manifest.category)) {
+    throw new Error(`Add-on ${manifest.id} category must be addon, tweak, or theme`);
+  }
   if (manifest.enabledByDefault !== undefined && typeof manifest.enabledByDefault !== "boolean") {
     throw new Error(`Add-on ${manifest.id} enabledByDefault must be a boolean`);
   }

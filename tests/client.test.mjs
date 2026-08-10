@@ -23,9 +23,17 @@ function setup() {
     repository: "https://github.com/ijsbeerdev/bettercodex",
     addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
     addons: [{
-      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", enabledByDefault: true },
+      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", category: "addon", enabledByDefault: true },
       screenshot: "data:image/svg+xml;base64,PHN2Zy8+",
       source: `BetterCodex.register({ id: "test-addon", start() { document.body.dataset.addon = "on"; }, stop() { delete document.body.dataset.addon; } });`
+    }, {
+      manifest: { id: "test-tweak", name: "Test tweak", version: "1.0.0", description: "Tests tweak grouping.", category: "tweak", enabledByDefault: true },
+      screenshot: null,
+      source: `BetterCodex.register({ id: "test-tweak", start() { document.body.dataset.tweak = "on"; }, stop() { delete document.body.dataset.tweak; } });`
+    }, {
+      manifest: { id: "test-theme", name: "Test theme", version: "1.0.0", description: "Tests theme grouping.", category: "theme", enabledByDefault: false },
+      screenshot: null,
+      source: `BetterCodex.register({ id: "test-theme", start() { document.body.dataset.theme = "on"; }, stop() { delete document.body.dataset.theme; } });`
     }]
   };
   dom.window.__BETTERCODEX_INJECT__(payload);
@@ -43,33 +51,74 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.equal(launcher.nextElementSibling, help);
   assert.equal(launcher.className, help.className);
   assert.equal(launcher.textContent.trim(), "");
-  assert.equal(launcher.querySelector("[data-bettercodex-box]").tagName, "svg");
-  assert.equal(launcher.querySelectorAll("[data-bettercodex-box] path").length, 3);
-  assert.equal(launcher.querySelector("[data-bettercodex-box]").style.color, "rgb(255, 255, 255)");
+  assert.equal(launcher.querySelector("[data-bettercodex-icon]").tagName, "svg");
+  assert.equal(launcher.querySelector("[data-bettercodex-icon]").getAttribute("viewBox"), "0 0 16 16");
+  assert.equal(launcher.querySelectorAll("[data-bettercodex-icon] path").length, 1);
+  assert.equal(launcher.querySelector("[data-bettercodex-icon]").style.color, "rgb(255, 255, 255)");
   assert.equal(host.style.display, "none");
   launcher.click();
   assert.equal(host.style.display, "block");
   assert.equal(shadow.querySelector(".nav-heading").textContent, "BetterCodex settings");
-  assert.deepEqual([...shadow.querySelectorAll(".nav-label")].map((item) => item.textContent), ["BetterCodex", "Plugins", "Themes"]);
-  assert.deepEqual([...shadow.querySelectorAll(".nav-icon svg")].map((icon) => icon.getAttribute("viewBox")), ["0 0 24 24", "0 0 24 24", "0 0 24 24"]);
+  assert.equal(shadow.querySelector("#bettercodex-title [data-bettercodex-icon]").getAttribute("viewBox"), "0 0 16 16");
+  assert.deepEqual([...shadow.querySelectorAll(".nav-label")].map((item) => item.textContent), ["BetterCodex", "Add-ons", "Tweaks", "Themes"]);
+  assert.deepEqual([...shadow.querySelectorAll(".nav-icon svg")].map((icon) => icon.getAttribute("viewBox")), ["0 0 24 24", "0 0 24 24", "0 0 24 24", "0 0 24 24"]);
   assert.match(shadow.querySelector(".version").textContent, /1\.0\.0/);
-  assert.equal(shadow.querySelector(".repo").href, "https://github.com/ijsbeerdev/bettercodex");
-  shadow.querySelector(".nav[data-target='plugins']").click();
+  assert.equal(shadow.querySelector(".update-check").textContent.trim(), "Check for updates");
+  assert.equal(shadow.querySelector(".update-check svg").getAttribute("viewBox"), "0 0 16 16");
+  assert.equal(shadow.querySelector(".source-link").href, "https://github.com/ijsbeerdev/bettercodex");
+  shadow.querySelector(".nav[data-target='addons']").click();
   assert.equal(shadow.getElementById("bettercodex").hidden, true);
-  assert.equal(shadow.getElementById("plugins").hidden, false);
-  assert.equal(shadow.getElementById("bettercodex-title").textContent, "Plugins");
-  assert.equal(shadow.querySelector(".nav[data-target='plugins']").getAttribute("aria-current"), "page");
+  assert.equal(shadow.getElementById("addons").hidden, false);
+  assert.equal(shadow.getElementById("bettercodex-title").textContent, "Add-ons");
+  assert.equal(shadow.querySelector(".nav[data-target='addons']").getAttribute("aria-current"), "page");
   assert.equal(shadow.querySelector(".generate-addon").textContent.replace(/\s+/g, " ").trim(), "+Generate addon");
-  assert.equal(shadow.querySelector(".plugin-preview").getAttribute("src"), "data:image/svg+xml;base64,PHN2Zy8+");
+  assert.equal(shadow.querySelector(".addons-list .plugin-preview").getAttribute("src"), "data:image/svg+xml;base64,PHN2Zy8+");
+  assert.equal(shadow.querySelector(".addons-list input[data-addon='test-tweak']"), null);
+  shadow.querySelector(".nav[data-target='tweaks']").click();
+  assert.equal(shadow.getElementById("addons").hidden, true);
+  assert.equal(shadow.getElementById("tweaks").hidden, false);
+  assert.equal(shadow.querySelector(".tweaks-list input[data-addon='test-tweak']")?.dataset.addon, "test-tweak");
   shadow.querySelector(".nav[data-target='themes']").click();
-  assert.equal(shadow.getElementById("plugins").hidden, true);
+  assert.equal(shadow.getElementById("tweaks").hidden, true);
   assert.equal(shadow.getElementById("themes").hidden, false);
   assert.equal(shadow.getElementById("bettercodex-title").textContent, "Themes");
+  assert.equal(shadow.querySelector(".themes-list input[data-addon='test-theme']")?.checked, false);
+  assert.equal(shadow.querySelector(".themes-list input[data-addon='test-addon']"), null);
   shadow.querySelector(".nav[data-target='bettercodex']").click();
   assert.equal(shadow.getElementById("bettercodex").hidden, false);
   assert.equal(shadow.getElementById("themes").hidden, true);
+  assert.equal(shadow.querySelector("#bettercodex-title [data-bettercodex-icon]").getAttribute("viewBox"), "0 0 16 16");
   shadow.querySelector(".back").click();
   assert.equal(host.style.display, "none");
+  dom.window.BetterCodex.destroy();
+});
+
+test("checks GitHub for a newer release and offers its release page", async () => {
+  const { dom } = setup();
+  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
+  let requested = false;
+  dom.window.__BETTERCODEX_CHECK_FOR_UPDATES__ = (requestId) => {
+    requested = true;
+    queueMicrotask(() => dom.window.dispatchEvent(new dom.window.CustomEvent("bettercodex:update-result", {
+      detail: {
+        requestId,
+        release: {
+        tag_name: "v1.1.0",
+        html_url: "https://github.com/ijsbeerdev/BetterCodex/releases/tag/v1.1.0"
+        }
+      }
+    })));
+  };
+
+  shadow.querySelector(".update-check").click();
+  await delay(0);
+
+  assert.equal(requested, true);
+  assert.equal(shadow.querySelector(".update-status").textContent, "BetterCodex v1.1.0 is available");
+  assert.equal(shadow.querySelector(".update-check").hidden, true);
+  assert.equal(shadow.querySelector(".update-check").textContent.trim(), "Check for updates");
+  assert.equal(shadow.querySelector(".update-download").hidden, false);
+  assert.equal(shadow.querySelector(".update-download").href, "https://github.com/ijsbeerdev/BetterCodex/releases/tag/v1.1.0");
   dom.window.BetterCodex.destroy();
 });
 

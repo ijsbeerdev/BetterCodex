@@ -3,6 +3,7 @@
   "name": "Approval Shelf",
   "version": "0.1.0",
   "description": "Keeps Codex's native composer visible beneath approval prompts.",
+  "category": "tweak",
   "screenshot": "screenshot.svg",
   "enabledByDefault": true
 }

@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("uses a fresh 0.x release version", async () => {
   const packageInfo = JSON.parse(await read("package.json"));
   const addon = JSON.parse(await read("addons/hot-reload/manifest.json"));
-  assert.equal(packageInfo.version, "0.2.0");
+  assert.equal(packageInfo.version, "0.3.0");
   assert.equal(addon.version, "0.2.0");
 });
 
