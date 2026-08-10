@@ -11,6 +11,7 @@ import {
   Download,
   Edit3,
   FolderClosed,
+  Gamepad2,
   Gauge,
   Hammer,
   Layers3,
@@ -20,6 +21,7 @@ import {
   MessageSquarePlus,
   MoreHorizontal,
   Palette,
+  RotateCcw,
   Search,
   ShoppingBag,
   Sparkles,
@@ -30,7 +32,7 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   catalog,
   customizationPrompt,
@@ -55,6 +57,13 @@ interface ChatMessage {
   pending?: boolean;
 }
 
+export interface ActivityEntry {
+  id: string;
+  label: string;
+  detail?: string;
+  status?: "running" | "completed" | "failed";
+}
+
 interface ThreadSummary {
   id: string;
   name?: string | null;
@@ -63,6 +72,7 @@ interface ThreadSummary {
   cwd?: string;
   gitInfo?: { branch?: string | null } | null;
   status?: { type?: string };
+  turns?: Array<{ id?: string; status?: string; items?: any[] }>;
 }
 
 interface ProjectSummary {
@@ -102,13 +112,12 @@ interface WorkspaceSession {
   selectedProjectCwd: string;
   prompt: string;
   messages: ChatMessage[];
-  activity: string[];
+  activity: ActivityEntry[];
   expandedProjects: string[];
-  recentsExpanded: boolean;
   chatSort: ChatSort;
   projectVisibleCounts: Record<string, number>;
-  recentVisibleCount: number;
   searchQuery: string;
+  wasRunning: boolean;
 }
 
 type ContextTarget =
@@ -196,6 +205,46 @@ function orderThreads(threads: ThreadSummary[], order: ChatSort, getTitle: (thre
 function messagesMatch(a: ChatMessage[], b: ChatMessage[]) {
   if (a.length !== b.length) return false;
   return a.every((message, index) => message.id === b[index]?.id && message.text === b[index]?.text && message.pending === b[index]?.pending);
+}
+
+function stringifyDetail(value: unknown) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  try { return JSON.stringify(value, null, 2); }
+  catch { return String(value); }
+}
+
+function activityFromItem(item: any): ActivityEntry | null {
+  if (!item?.id) return null;
+  if (item.type === "commandExecution") {
+    const output = item.aggregatedOutput ? `\n\n${item.aggregatedOutput}` : "";
+    return { id: item.id, label: `Running ${item.command || "a command"}`, detail: `$ ${item.command || ""}${output}`.trim(), status: item.status === "failed" ? "failed" : item.status === "completed" ? "completed" : "running" };
+  }
+  if (item.type === "mcpToolCall" || item.type === "dynamicToolCall") {
+    const argumentsText = stringifyDetail(item.arguments);
+    const resultText = stringifyDetail(item.result ?? item.contentItems ?? item.error);
+    const detail = [`Arguments\n${argumentsText}`, resultText ? `Result\n${resultText}` : ""].filter(Boolean).join("\n\n");
+    return { id: item.id, label: `Using ${item.tool || "tool"}`, detail, status: item.status === "failed" || item.error ? "failed" : item.status === "completed" || item.success === true ? "completed" : "running" };
+  }
+  if (item.type === "fileChange") return { id: item.id, label: "Edited files", detail: stringifyDetail(item.changes), status: item.status === "failed" ? "failed" : item.status === "completed" ? "completed" : "running" };
+  if (item.type === "imageView") return { id: item.id, label: "Viewed an image", detail: item.path, status: "completed" };
+  if (item.type === "webSearch") return { id: item.id, label: "Searched the web", detail: stringifyDetail(item), status: "completed" };
+  return null;
+}
+
+export function extractActivities(thread: any) {
+  const output: ActivityEntry[] = [];
+  for (const turn of thread?.turns ?? []) {
+    for (const item of turn?.items ?? []) {
+      const entry = activityFromItem(item);
+      if (entry) output.unshift(entry);
+    }
+  }
+  return output.slice(0, 30);
+}
+
+export function threadHasRunningTurn(thread: any) {
+  return (thread?.turns ?? []).some((turn: any) => turn?.status === "inProgress");
 }
 
 export function normalizeProjectPath(cwd: string) {
@@ -292,6 +341,145 @@ function SidebarThreadButton({ title, active, running, projectThread = false, on
   </button>;
 }
 
+export function ActivityLog({ entries }: { entries: ActivityEntry[] }) {
+  return <div className="transcript-activity" aria-label="Task activity">
+    {entries.map((entry) => {
+      const marker = entry.status === "running"
+        ? <LoaderCircle className="activity-spinner" size={14} aria-label="Running" />
+        : <CircleDot size={14} aria-label={entry.status === "failed" ? "Failed" : "Completed"} />;
+      if (!entry.detail?.trim()) return <div className="activity-row" key={entry.id}>{marker}<span>{entry.label}</span></div>;
+      return <details className={`activity-entry activity-entry--${entry.status ?? "completed"}`} key={entry.id}>
+        <summary>{marker}<span>{entry.label}</span><ChevronRight className="activity-chevron" size={14} /></summary>
+        <pre><code>{entry.detail}</code></pre>
+      </details>;
+    })}
+  </div>;
+}
+
+type SnakePoint = { x: number; y: number };
+type SnakeDirection = { x: number; y: number };
+type SnakeStatus = "ready" | "playing" | "lost" | "won";
+
+const snakeBoardSize = 14;
+const initialSnake: SnakePoint[] = [{ x: 6, y: 7 }, { x: 5, y: 7 }, { x: 4, y: 7 }];
+const initialSnakeFood: SnakePoint = { x: 10, y: 7 };
+const snakeDirections: Record<string, SnakeDirection> = {
+  ArrowUp: { x: 0, y: -1 },
+  w: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+  s: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 },
+  a: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+  d: { x: 1, y: 0 },
+};
+
+function sameSnakePoint(a: SnakePoint, b: SnakePoint) {
+  return a.x === b.x && a.y === b.y;
+}
+
+function nextSnakeFood(snake: SnakePoint[]) {
+  const freeCells: SnakePoint[] = [];
+  for (let y = 0; y < snakeBoardSize; y += 1) {
+    for (let x = 0; x < snakeBoardSize; x += 1) {
+      if (!snake.some((point) => point.x === x && point.y === y)) freeCells.push({ x, y });
+    }
+  }
+  return freeCells[Math.floor(Math.random() * freeCells.length)] ?? initialSnakeFood;
+}
+
+export function SnakeGame({ onClose }: { onClose: () => void }) {
+  const [snake, setSnake] = useState<SnakePoint[]>(initialSnake);
+  const [food, setFood] = useState<SnakePoint>(initialSnakeFood);
+  const [status, setStatus] = useState<SnakeStatus>("ready");
+  const directionRef = useRef<SnakeDirection>({ x: 1, y: 0 });
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  const resetGame = useCallback(() => {
+    directionRef.current = { x: 1, y: 0 };
+    setSnake(initialSnake);
+    setFood(initialSnakeFood);
+    setStatus("ready");
+  }, []);
+
+  const steer = useCallback((nextDirection: SnakeDirection) => {
+    const currentDirection = directionRef.current;
+    if (currentDirection.x + nextDirection.x === 0 && currentDirection.y + nextDirection.y === 0) return;
+    directionRef.current = nextDirection;
+    setStatus((current) => current === "ready" ? "playing" : current);
+  }, []);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      const direction = snakeDirections[event.key] ?? snakeDirections[event.key.toLocaleLowerCase()];
+      if (direction) {
+        event.preventDefault();
+        steer(direction);
+      }
+      if (event.key === " " && status === "playing") {
+        event.preventDefault();
+        setStatus("ready");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, status, steer]);
+
+  useEffect(() => {
+    if (status !== "playing") return;
+    const timer = window.setInterval(() => {
+      setSnake((currentSnake) => {
+        const head = currentSnake[0];
+        const nextHead = { x: head.x + directionRef.current.x, y: head.y + directionRef.current.y };
+        const ateFood = sameSnakePoint(nextHead, food);
+        const collisionBody = ateFood ? currentSnake : currentSnake.slice(0, -1);
+        const hitWall = nextHead.x < 0 || nextHead.y < 0 || nextHead.x >= snakeBoardSize || nextHead.y >= snakeBoardSize;
+        if (hitWall || collisionBody.some((point) => sameSnakePoint(point, nextHead))) {
+          setStatus("lost");
+          return currentSnake;
+        }
+        const nextSnake = ateFood ? [nextHead, ...currentSnake] : [nextHead, ...currentSnake.slice(0, -1)];
+        if (ateFood) {
+          if (nextSnake.length === snakeBoardSize * snakeBoardSize) setStatus("won");
+          else setFood(nextSnakeFood(nextSnake));
+        }
+        return nextSnake;
+      });
+    }, 150);
+    return () => window.clearInterval(timer);
+  }, [food, status]);
+
+  const score = snake.length - initialSnake.length;
+  const statusLabel = status === "lost" ? "Bonk! Try another run." : status === "won" ? "You filled the whole garden!" : status === "playing" ? "Growing…" : "Press an arrow key or WASD to begin.";
+
+  return <div className="dialog-layer snake-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="snake-dialog" role="dialog" aria-modal="true" aria-label="Snake break" ref={dialogRef} tabIndex={-1}>
+      <header className="snake-header"><div><span className="eyebrow">A tiny break</span><h2>Snake</h2></div><div className="snake-score"><span>Score</span><strong>{score}</strong></div><button className="icon-button" onClick={onClose} aria-label="Close Snake"><X size={17} /></button></header>
+      <div className="snake-board" role="img" aria-label={`Snake board. Score ${score}. ${statusLabel}`}>
+        {Array.from({ length: snakeBoardSize * snakeBoardSize }, (_, index) => {
+          const point = { x: index % snakeBoardSize, y: Math.floor(index / snakeBoardSize) };
+          const snakeIndex = snake.findIndex((segment) => sameSnakePoint(segment, point));
+          const isFood = sameSnakePoint(food, point);
+          return <span key={index} className={`snake-cell ${snakeIndex === 0 ? "snake-cell--head" : snakeIndex > 0 ? "snake-cell--body" : ""} ${isFood ? "snake-cell--food" : ""}`} />;
+        })}
+      </div>
+      <p className="snake-status" aria-live="polite">{statusLabel}</p>
+      <div className="snake-controls" aria-label="Snake controls">
+        <button onClick={() => steer(snakeDirections.ArrowUp)} aria-label="Move up">↑</button>
+        <button onClick={() => steer(snakeDirections.ArrowLeft)} aria-label="Move left">←</button>
+        <button onClick={() => steer(snakeDirections.ArrowDown)} aria-label="Move down">↓</button>
+        <button onClick={() => steer(snakeDirections.ArrowRight)} aria-label="Move right">→</button>
+        <button className="snake-reset" onClick={resetGame}><RotateCcw size={14} />New game</button>
+      </div>
+    </section>
+  </div>;
+}
+
 export default function Workspace() {
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [reconnectTick, setReconnectTick] = useState(0);
@@ -314,11 +502,13 @@ export default function Workspace() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(() => new Set());
-  const [recentsExpanded, setRecentsExpanded] = useState(true);
   const [chatSort, setChatSort] = useState<ChatSort>("recent");
   const [projectVisibleCounts, setProjectVisibleCounts] = useState<Record<string, number>>({});
-  const [recentVisibleCount, setRecentVisibleCount] = useState(5);
-  const [activity, setActivity] = useState<string[]>([]);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try { return Math.min(420, Math.max(230, Number(localStorage.getItem("blackbox-sidebar-width-v1")) || 282)); }
+    catch { return 282; }
+  });
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
   const [installedIds, setInstalledIds] = useState<string[]>(defaultInstalledIds);
   const [enabledIds, setEnabledIds] = useState<string[]>(defaultEnabledIds);
@@ -347,6 +537,7 @@ export default function Workspace() {
   const activeTurnIdRef = useRef<string | null>(null);
   const streamingRef = useRef(false);
   const refreshInFlightRef = useRef(false);
+  const localTurnInFlightRef = useRef(false);
 
   const updatePrompt = useCallback((value: string) => {
     setPrompt(value);
@@ -395,11 +586,26 @@ export default function Workspace() {
 
   const readThreadMessages = useCallback(async (threadId: string) => {
     const result = await rpc("thread/read", { threadId, includeTurns: true });
-    return { thread: result?.thread as ThreadSummary | undefined, messages: extractMessages(result?.thread) };
+    return {
+      thread: result?.thread as ThreadSummary | undefined,
+      messages: extractMessages(result?.thread),
+      activity: extractActivities(result?.thread),
+      running: threadHasRunningTurn(result?.thread),
+    };
   }, [rpc]);
 
   const addActivity = useCallback((message: string) => {
-    setActivity((current) => [message, ...current].slice(0, 5));
+    setActivity((current) => [{ id: crypto.randomUUID(), label: message }, ...current].slice(0, 30));
+  }, []);
+
+  const upsertActivity = useCallback((entry: ActivityEntry) => {
+    setActivity((current) => {
+      const existingIndex = current.findIndex((item) => item.id === entry.id);
+      if (existingIndex < 0) return [entry, ...current].slice(0, 30);
+      const next = [...current];
+      next[existingIndex] = { ...next[existingIndex], ...entry };
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -456,15 +662,14 @@ export default function Workspace() {
         if (typeof session.selectedProjectCwd === "string") setSelectedProjectCwd(session.selectedProjectCwd);
         if (typeof session.prompt === "string") setPrompt(session.prompt);
         if (Array.isArray(session.messages)) setMessages(session.messages.slice(-100));
-        if (Array.isArray(session.activity)) setActivity(session.activity.slice(0, 12));
+        if (Array.isArray(session.activity)) setActivity(session.activity.slice(0, 30).map((entry: ActivityEntry | string) => typeof entry === "string" ? { id: crypto.randomUUID(), label: entry } : entry));
+        if (typeof session.wasRunning === "boolean") setStreaming(session.wasRunning);
         if (Array.isArray(session.expandedProjects)) {
           setExpandedProjects(new Set(session.expandedProjects));
           initializedExpandedProjectsRef.current = session.expandedProjects.length > 0;
         }
-        if (typeof session.recentsExpanded === "boolean") setRecentsExpanded(session.recentsExpanded);
         if (["recent", "oldest", "title-asc", "title-desc"].includes(session.chatSort ?? "")) setChatSort(session.chatSort as ChatSort);
         if (session.projectVisibleCounts) setProjectVisibleCounts(session.projectVisibleCounts);
-        if (typeof session.recentVisibleCount === "number") setRecentVisibleCount(Math.max(5, session.recentVisibleCount));
         if (typeof session.searchQuery === "string") setSearchQuery(session.searchQuery);
       }
       if (savedDraft !== null) setPrompt(savedDraft);
@@ -509,6 +714,11 @@ export default function Workspace() {
   }, [activeTurnId]);
 
   useEffect(() => {
+    try { localStorage.setItem("blackbox-sidebar-width-v1", String(sidebarWidth)); }
+    catch { /* keep the in-memory width */ }
+  }, [sidebarWidth]);
+
+  useEffect(() => {
     if (!storageReady) return;
     const persist = () => localStorage.setItem("blackbox-workspace-session-v1", JSON.stringify({
       view,
@@ -517,13 +727,12 @@ export default function Workspace() {
       selectedProjectCwd,
       prompt,
       messages: messages.slice(-100).map((message) => ({ ...message, pending: false })),
-      activity: activity.slice(0, 12),
+      activity: activity.slice(0, 30),
       expandedProjects: [...expandedProjects],
-      recentsExpanded,
       chatSort,
       projectVisibleCounts,
-      recentVisibleCount,
       searchQuery,
+      wasRunning: streaming,
     } satisfies WorkspaceSession));
     const timer = window.setTimeout(persist, 100);
     window.addEventListener("pagehide", persist);
@@ -532,7 +741,7 @@ export default function Workspace() {
       window.removeEventListener("pagehide", persist);
       persist();
     };
-  }, [activeThreadId, activity, chatIntent, chatSort, expandedProjects, messages, projectVisibleCounts, prompt, recentVisibleCount, recentsExpanded, searchQuery, selectedProjectCwd, storageReady, view]);
+  }, [activeThreadId, activity, chatIntent, chatSort, expandedProjects, messages, projectVisibleCounts, prompt, searchQuery, selectedProjectCwd, storageReady, streaming, view]);
 
   useEffect(() => {
     const gatewayUrl = import.meta.env.PUBLIC_GATEWAY_URL || "ws://127.0.0.1:8787";
@@ -564,7 +773,8 @@ export default function Workspace() {
             await rpc("thread/resume", { threadId: restoredThreadId });
             const restored = await readThreadMessages(restoredThreadId);
             setMessages((current) => messagesMatch(current, restored.messages) ? current : restored.messages);
-            if (restored.thread?.status?.type === "active") setStreaming(true);
+            setActivity(restored.activity);
+            setStreaming(restored.running || restored.thread?.status?.type === "active");
           } catch { /* keep the persisted transcript if the source chat is unavailable */ }
         }
       } catch (error) {
@@ -617,22 +827,57 @@ export default function Workspace() {
         case "turn/started":
           if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
           setStreaming(true);
-          setActiveTurnId(params.turn?.id ?? null);
+          activeTurnIdRef.current = params.turn?.id ?? null;
+          setActiveTurnId(activeTurnIdRef.current);
           addActivity("Codex started working");
           break;
         case "turn/completed":
           if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
+          localTurnInFlightRef.current = false;
           setStreaming(false);
+          activeTurnIdRef.current = null;
           setActiveTurnId(null);
           setMessages((current) => current.map((item) => item.pending ? { ...item, pending: false } : item));
           addActivity(params.turn?.status === "failed" ? "Turn failed" : "Turn completed");
           break;
         case "item/started": {
           if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
-          const itemType = params.item?.type;
-          if (itemType === "commandExecution") addActivity(`Running ${params.item.command ?? "a command"}`);
-          if (itemType === "fileChange") addActivity("Editing files");
-          if (itemType === "mcpToolCall") addActivity(`Using ${params.item.tool ?? "a tool"}`);
+          const entry = activityFromItem(params.item);
+          if (entry) upsertActivity(entry);
+          break;
+        }
+        case "item/completed": {
+          if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
+          const entry = activityFromItem(params.item);
+          if (entry) upsertActivity(entry);
+          break;
+        }
+        case "item/commandExecution/outputDelta":
+        case "command/exec/outputDelta": {
+          if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
+          const itemId = params.itemId;
+          if (!itemId || !params.delta) break;
+          setActivity((current) => {
+            const index = current.findIndex((entry) => entry.id === itemId);
+            if (index < 0) return [{ id: itemId, label: "Running a command", detail: params.delta, status: "running" as const }, ...current].slice(0, 30);
+            const next = [...current];
+            next[index] = { ...next[index], detail: `${next[index].detail ?? ""}${params.delta}`, status: "running" };
+            return next;
+          });
+          break;
+        }
+        case "mcpToolCall/progress": {
+          if (params.threadId && params.threadId !== activeThreadIdRef.current) break;
+          const itemId = params.itemId;
+          if (!itemId || !params.message) break;
+          setActivity((current) => {
+            const index = current.findIndex((entry) => entry.id === itemId);
+            if (index < 0) return [{ id: itemId, label: "Using a tool", detail: params.message, status: "running" as const }, ...current].slice(0, 30);
+            const next = [...current];
+            const separator = next[index].detail ? "\n" : "";
+            next[index] = { ...next[index], detail: `${next[index].detail ?? ""}${separator}${params.message}`, status: "running" };
+            return next;
+          });
           break;
         }
         case "thread/name/updated":
@@ -640,7 +885,15 @@ export default function Workspace() {
           break;
         case "thread/status/changed":
           setThreads((current) => current.map((item) => item.id === params.threadId ? { ...item, status: params.status } : item));
-          if (params.threadId === activeThreadIdRef.current) setStreaming(params.status?.type === "active");
+          if (params.threadId === activeThreadIdRef.current) {
+            const isActive = params.status?.type === "active";
+            setStreaming(isActive);
+            if (!isActive) {
+              activeTurnIdRef.current = null;
+              localTurnInFlightRef.current = false;
+              setActiveTurnId(null);
+            }
+          }
           break;
         case "thread/archived":
           setThreads((current) => current.filter((item) => item.id !== params.threadId));
@@ -657,6 +910,9 @@ export default function Workspace() {
     socket.onclose = () => {
       for (const pending of pendingRef.current.values()) pending.reject(new Error("Gateway disconnected"));
       pendingRef.current.clear();
+      activeTurnIdRef.current = null;
+      localTurnInFlightRef.current = false;
+      setActiveTurnId(null);
       if (!closedIntentionally) {
         setConnection("offline");
         reconnectTimer = window.setTimeout(() => setReconnectTick((value) => value + 1), 1500);
@@ -668,7 +924,7 @@ export default function Workspace() {
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
       socket.close();
     };
-  }, [addActivity, loadAllThreads, readThreadMessages, reconnectTick, rpc, sendRaw]);
+  }, [addActivity, loadAllThreads, readThreadMessages, reconnectTick, rpc, sendRaw, upsertActivity]);
 
   useEffect(() => {
     if (connection !== "connected") return;
@@ -691,18 +947,20 @@ export default function Workspace() {
         setThreads(latest);
 
         const threadId = activeThreadIdRef.current;
-        if (threadId && !threadId.startsWith("demo-") && !activeTurnIdRef.current) {
+        if (threadId && !threadId.startsWith("demo-") && !activeTurnIdRef.current && !localTurnInFlightRef.current) {
           const refreshed = await readThreadMessages(threadId);
           if (!disposed) {
             setMessages((current) => messagesMatch(current, refreshed.messages) ? current : refreshed.messages);
-            setStreaming(refreshed.thread?.status?.type === "active");
+            setActivity(refreshed.activity);
+            setStreaming(refreshed.running || refreshed.thread?.status?.type === "active");
           }
         }
       } catch { /* the reconnect loop handles gateway failures */ }
       finally { refreshInFlightRef.current = false; }
     };
 
-    const interval = window.setInterval(refresh, 2500);
+    void refresh();
+    const interval = window.setInterval(refresh, 1200);
     const onVisibility = () => { if (document.visibilityState === "visible") void refresh(); };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
@@ -805,7 +1063,6 @@ export default function Workspace() {
     setExpandedProjects(new Set([selectedProject.id]));
   }, [selectedProject]);
 
-  const recentThreads = useMemo(() => orderThreads(availableThreads, chatSort, displayThreadTitle), [availableThreads, chatSort, displayThreadTitle]);
   const activeThread = useMemo(() => availableThreads.find((thread) => thread.id === activeThreadId), [activeThreadId, availableThreads]);
   const installedItems = useMemo(() => getInstalledItems(installedIds), [installedIds]);
   const currentModelOption = useMemo(() => models.find((item) => (item.id ?? item.model) === selectedModel), [models, selectedModel]);
@@ -922,6 +1179,22 @@ export default function Workspace() {
     });
   };
 
+  const beginSidebarResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (window.innerWidth <= 860) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = sidebarWidth;
+    document.body.classList.add("sidebar-resizing");
+    const onMove = (moveEvent: PointerEvent) => setSidebarWidth(Math.min(420, Math.max(230, startWidth + moveEvent.clientX - startX)));
+    const onUp = () => {
+      document.body.classList.remove("sidebar-resizing");
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp, { once: true });
+  }, [sidebarWidth]);
+
   const openThread = async (thread: ThreadSummary) => {
     setView("chat");
     setChatIntent("default");
@@ -947,7 +1220,8 @@ export default function Workspace() {
       await rpc("thread/resume", { threadId: thread.id });
       const result = await readThreadMessages(thread.id);
       setMessages(result.messages);
-      setStreaming(result.thread?.status?.type === "active");
+      setActivity(result.activity);
+      setStreaming(result.running || result.thread?.status?.type === "active");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Could not open task");
     }
@@ -972,6 +1246,7 @@ export default function Workspace() {
 
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text: value }]);
     updatePrompt("");
+    localTurnInFlightRef.current = true;
     setStreaming(true);
 
     try {
@@ -1002,8 +1277,11 @@ export default function Workspace() {
         cwd: taskCwd,
         sandboxPolicy: { type: "workspaceWrite", networkAccess: false },
       });
-      setActiveTurnId(result?.turn?.id ?? null);
+      activeTurnIdRef.current = result?.turn?.id ?? null;
+      setActiveTurnId(activeTurnIdRef.current);
+      localTurnInFlightRef.current = false;
     } catch (error) {
+      localTurnInFlightRef.current = false;
       setStreaming(false);
       const message = error instanceof Error ? error.message : "Could not start task";
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: `Could not start this task: ${message}` }]);
@@ -1057,7 +1335,7 @@ export default function Workspace() {
   const pageTitle = view === "library" ? "Library" : view === "marketplace" ? "Marketplace" : activeThread ? displayThreadTitle(activeThread) : chatIntent === "customize" ? "Customize Blackbox" : "New chat";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
       <aside className={`sidebar ${mobileNavOpen ? "sidebar--mobile-open" : ""}`}>
         <div className="brand-row">
           <button className="brand" onClick={newTask} aria-label="Blackbox home"><span>Blackbox</span></button>
@@ -1101,25 +1379,21 @@ export default function Workspace() {
           </div>
         </div>
 
-        <div className={`sidebar-section recents-section ${recentsExpanded ? "recents-section--expanded" : ""}`}>
-          <div className="sidebar-section-heading">
-            <button className="section-label section-toggle" onClick={() => setRecentsExpanded((value) => !value)} aria-expanded={recentsExpanded}><span>Recent chats</span><ChevronRight className="section-chevron" size={15} /></button>
-            <CustomDropdown ariaLabel="Recent chat order" className="sidebar-sort" icon={<ArrowUpDown size={13} />} value={chatSort} options={chatSortOptions} onChange={(value) => setChatSort(value as ChatSort)} />
-          </div>
-          <div className={`recent-panel ${recentsExpanded ? "recent-panel--open" : ""}`}>
-            <div className="recent-panel-inner"><div className="thread-list">
-              {recentThreads.slice(0, recentVisibleCount).map((thread) => <SidebarThreadButton key={thread.id} title={displayThreadTitle(thread)} active={activeThreadId === thread.id} running={thread.status?.type === "active" || (activeThreadId === thread.id && streaming)} onOpen={() => openThread(thread)} onContextMenu={(event) => openContextMenu(event, { kind: "thread", thread })} />)}
-              {recentThreads.length > recentVisibleCount && <button className="show-more-button" onClick={() => setRecentVisibleCount((current) => current + 5)}>Show 5 more <span>{recentThreads.length - recentVisibleCount}</span></button>}
-              {recentThreads.length === 0 && <p className="empty-thread-list">Your recent chats will appear here.</p>}
-            </div></div>
-          </div>
-        </div>
-
         <div className="sidebar-footer">
           <span className="avatar">A</span>
           <span className="account-copy"><strong>Local Codex</strong><small>{connection === "connected" ? "Ready" : "Gateway offline"}</small></span>
           <span className={`account-status account-status--${connection}`} />
         </div>
+        <div
+          className="sidebar-resizer"
+          role="separator"
+          aria-label="Resize sidebar"
+          aria-orientation="vertical"
+          aria-valuemin={230}
+          aria-valuemax={420}
+          aria-valuenow={Math.round(sidebarWidth)}
+          onPointerDown={beginSidebarResize}
+        />
       </aside>
 
       {mobileNavOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />}
@@ -1157,7 +1431,7 @@ export default function Workspace() {
               <div className="message-view">
                 <div className="messages">
                   {messages.map((message) => <article key={message.id} className={`message message--${message.role}`}><div className="message-body"><div className="message-text"><RichText text={message.text} />{message.pending && <span className="typing-cursor" />}</div></div></article>)}
-                  {activity.length > 0 && <div className="transcript-activity" aria-label="Task activity">{activity.slice(0, 8).reverse().map((entry, index) => <div key={`${entry}-${index}`}><CircleDot size={14} /><span>{entry}</span></div>)}</div>}
+                  {activity.length > 0 && <ActivityLog entries={activity.slice(0, 20).reverse()} />}
                   {streaming && !messages.some((message) => message.pending) && <article className="message message--assistant"><div className="thinking"><LoaderCircle size={15} /> Working…</div></article>}
                   <div ref={messagesEndRef} />
                 </div>

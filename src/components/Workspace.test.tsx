@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import Workspace, { titleFromPrompt } from "./Workspace";
+import Workspace, { ActivityLog, extractActivities, threadHasRunningTurn, titleFromPrompt } from "./Workspace";
 import { hasMockSocket, takeLatestSocketOffline } from "../test/setup";
 
 describe("Workspace navigation", () => {
@@ -140,6 +140,7 @@ describe("Workspace navigation", () => {
     await waitFor(() => expect(hasMockSocket()).toBe(true));
     act(() => takeLatestSocketOffline());
 
+    expect(screen.queryByText("Recent chats")).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Project chat order: Recently updated" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Persist composer drafts" })).not.toBeInTheDocument();
     const showMoreButtons = screen.getAllByRole("button", { name: /Show 5 more/ });
@@ -177,11 +178,10 @@ describe("Workspace navigation", () => {
       messages: [],
       activity: [],
       expandedProjects: [],
-      recentsExpanded: true,
       chatSort: "recent",
       projectVisibleCounts: {},
-      recentVisibleCount: 5,
       searchQuery: "",
+      wasRunning: false,
     }));
 
     render(<Workspace />);
@@ -206,5 +206,57 @@ describe("Workspace navigation", () => {
   it("creates concise local titles without spending another model call", () => {
     expect(titleFromPrompt("Please fix theme flickering on refresh. Keep the draft intact.")).toBe("fix theme flickering on refresh");
     expect(titleFromPrompt("Build a very long sidebar improvement that keeps every single chat visible while also making the ordering controls easy to understand for everybody").length).toBeLessThanOrEqual(64);
+  });
+
+  it("resizes the sidebar and persists its width", async () => {
+    render(<Workspace />);
+    const separator = screen.getByRole("separator", { name: "Resize sidebar" });
+
+    fireEvent.pointerDown(separator, { clientX: 282 });
+    fireEvent.pointerMove(window, { clientX: 352 });
+    fireEvent.pointerUp(window);
+
+    expect(separator).toHaveAttribute("aria-valuenow", "352");
+    await waitFor(() => expect(localStorage.getItem("blackbox-sidebar-width-v1")).toBe("352"));
+  });
+
+  it("restores the visible running state immediately after refresh", async () => {
+    localStorage.setItem("blackbox-workspace-session-v1", JSON.stringify({
+      view: "chat",
+      chatIntent: "default",
+      activeThreadId: "demo-running",
+      selectedProjectCwd: "Preview",
+      prompt: "",
+      messages: [{ id: "m1", role: "assistant", text: "Still working" }],
+      activity: [],
+      expandedProjects: [],
+      chatSort: "recent",
+      projectVisibleCounts: {},
+      searchQuery: "",
+      wasRunning: true,
+    }));
+
+    render(<Workspace />);
+    expect(await screen.findByText("Working…")).toBeInTheDocument();
+  });
+
+  it("reconstructs and expands live tool activity from Codex turns", async () => {
+    const thread = {
+      turns: [{
+        status: "inProgress",
+        items: [{ id: "tool-1", type: "dynamicToolCall", tool: "js", arguments: { query: "threads" }, status: "inProgress", contentItems: [{ type: "text", text: "Reading threads" }] }],
+      }],
+    };
+    expect(threadHasRunningTurn(thread)).toBe(true);
+    const entries = extractActivities(thread);
+    expect(entries[0]).toMatchObject({ id: "tool-1", label: "Using js", status: "running" });
+
+    const user = userEvent.setup();
+    render(<ActivityLog entries={entries} />);
+    const details = screen.getByText("Using js").closest("details");
+    expect(details).not.toBeNull();
+    await user.click(screen.getByText("Using js"));
+    expect(details).toHaveAttribute("open");
+    expect(within(details!).getByText(/Reading threads/)).toBeInTheDocument();
   });
 });
