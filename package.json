@@ -1,40 +1,13 @@
 {
-  "name": "blackbox",
-  "version": "0.1.0",
+  "name": "blackbox-codex-plugin",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host 127.0.0.1",
-    "dev:web": "astro dev --host 127.0.0.1",
-    "dev:gateway": "tsx watch server/index.ts",
-    "smoke": "node scripts/smoke.mjs",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "build": "astro check && astro build && tsc -p server/tsconfig.json --noEmit",
-    "preview": "tsx server/preview.ts"
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs"
   },
-  "dependencies": {
-    "@astrojs/react": "latest",
-    "@tailwindcss/vite": "latest",
-    "astro": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "ws": "latest"
-  },
-  "devDependencies": {
-    "@astrojs/check": "latest",
-    "@testing-library/jest-dom": "^7.0.0",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.3",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@types/ws": "latest",
-    "@vitejs/plugin-react": "^6.0.5",
-    "jsdom": "^29.1.1",
-    "tsx": "latest",
-    "typescript": "latest",
-    "vitest": "^4.1.10"
+  "engines": {
+    "node": ">=22"
   }
 }

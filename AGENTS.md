@@ -1,7 +1,7 @@
 # Blackbox agent guidance
 
-For any theme, add-on, mod, Marketplace, Library, or customization request, read `docs/ADDON_AUTHORING.md` before exploring or editing the implementation. Follow its fast path and do not rediscover the architecture from scratch.
+Blackbox is a Codex-native plugin marketplace. Do not recreate a standalone web app and do not patch Codex executables, `app.asar`, signed Windows package files, or update settings.
 
-Keep the interface cozy-only. Every user-visible customization must be registered in `src/lib/catalog.ts`, manageable from Library, and removable without manually editing storage.
+Keep user-visible metadata in `plugins/blackbox/.codex-plugin/plugin.json`. Keep the marketplace entry in `.agents/plugins/marketplace.json`. Every capability must be installable, disableable, and removable through Codex's native Plugins UI.
 
-Before handing off changes, run `npm test` and `npm run build`.
+Keep copy and presentation cozy and compact. Before handing off changes, run `npm test`, `npm run build`, the skill validator, and the plugin validator.

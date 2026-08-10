@@ -1,0 +1,30 @@
+{
+  "name": "blackbox",
+  "version": "1.0.0+codex.20260810114545",
+  "description": "Cozy, update-safe customizations delivered inside Codex.",
+  "author": {
+    "name": "ijsbeer"
+  },
+  "homepage": "https://github.com/ijsbeerdev/blackbox",
+  "repository": "https://github.com/ijsbeerdev/blackbox",
+  "license": "MIT",
+  "keywords": [
+    "blackbox",
+    "codex",
+    "plugins",
+    "customization"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Blackbox",
+    "shortDescription": "Cozy customizations for Codex",
+    "longDescription": "Blackbox lives entirely inside Codex and delivers update-safe customizations through the official plugin system.",
+    "developerName": "ijsbeer",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skills"
+    ],
+    "websiteURL": "https://github.com/ijsbeerdev/blackbox",
+    "defaultPrompt": "Show the installed Blackbox version and repository."
+  }
+}
