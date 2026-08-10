@@ -1,0 +1,8 @@
+{
+  "id": "auto-expand-activity",
+  "name": "Auto Expand Activity",
+  "version": "0.1.0",
+  "description": "Automatically opens collapsed file edits and command activity in chat.",
+  "screenshot": "screenshot.svg",
+  "enabledByDefault": true
+}

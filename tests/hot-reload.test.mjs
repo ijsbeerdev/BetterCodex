@@ -9,10 +9,10 @@ import { watchAddons } from "../src/hot-reload.mjs";
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-test("Hot Reload is the only bundled add-on and cleans up when disabled", async () => {
+test("bundled add-ons load and Hot Reload cleans up when disabled", async () => {
   const addonsRoot = fileURLToPath(new URL("../addons", import.meta.url));
   const addons = await loadAddons(addonsRoot);
-  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["hot-reload"]);
+  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "hot-reload", "project-kanban"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
   const dom = new JSDOM("<!doctype html><body><button aria-label='Open help menu'></button></body>", {

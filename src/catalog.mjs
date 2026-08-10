@@ -1,7 +1,14 @@
 import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, extname, join } from "node:path";
 
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SCREENSHOT_TYPES = new Map([
+  [".jpeg", "image/jpeg"],
+  [".jpg", "image/jpeg"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml"],
+  [".webp", "image/webp"]
+]);
 
 export function validateManifest(manifest, folderName = manifest?.id) {
   if (!manifest || typeof manifest !== "object") throw new Error("Add-on manifest must be an object");
@@ -12,6 +19,12 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   }
   if (manifest.enabledByDefault !== undefined && typeof manifest.enabledByDefault !== "boolean") {
     throw new Error(`Add-on ${manifest.id} enabledByDefault must be a boolean`);
+  }
+  if (manifest.screenshot !== undefined) {
+    const extension = extname(manifest.screenshot).toLowerCase();
+    if (typeof manifest.screenshot !== "string" || basename(manifest.screenshot) !== manifest.screenshot || !SCREENSHOT_TYPES.has(extension)) {
+      throw new Error(`Add-on ${manifest.id} screenshot must be a local PNG, JPEG, WebP, or SVG filename`);
+    }
   }
   return manifest;
 }
@@ -24,6 +37,12 @@ export async function loadAddons(addonsRoot) {
     const root = join(addonsRoot, folder);
     const manifest = validateManifest(JSON.parse(await readFile(join(root, "manifest.json"), "utf8")), folder);
     const source = await readFile(join(root, "index.js"), "utf8");
-    return { manifest, source: `${source}\n//# sourceURL=blackbox-addon://${manifest.id}/index.js` };
+    let screenshot = null;
+    if (manifest.screenshot) {
+      const extension = extname(manifest.screenshot).toLowerCase();
+      const image = await readFile(join(root, manifest.screenshot));
+      screenshot = `data:${SCREENSHOT_TYPES.get(extension)};base64,${image.toString("base64")}`;
+    }
+    return { manifest, screenshot, source: `${source}\n//# sourceURL=blackbox-addon://${manifest.id}/index.js` };
   }));
 }

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280" role="img" aria-labelledby="title desc">
+  <title id="title">Auto Expand Activity preview</title>
+  <desc id="desc">An expanded Codex command and file activity group.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0a0a0b"/><stop offset="1" stop-color="#18181a"/></linearGradient></defs>
+  <rect width="640" height="280" rx="20" fill="url(#bg)"/>
+  <g font-family="Segoe UI, sans-serif">
+    <path d="M38 40h12l5 5-14 14-8 1 1-8z" fill="none" stroke="#b8b8bf" stroke-width="1.5"/>
+    <text x="66" y="55" fill="#f0f0f3" font-size="16" font-weight="600">Edited files, ran commands</text>
+    <path d="m280 48 6 6 6-6" fill="none" stroke="#a9a9b0" stroke-width="1.5" stroke-linecap="round"/>
+    <g fill="#c3c3c9" font-size="14">
+      <rect x="42" y="79" width="17" height="15" rx="3" fill="none" stroke="#929299"/><path d="m47 84 3 2-3 2m6 1h2" fill="none" stroke="#929299" stroke-width="1.2"/>
+      <text x="72" y="92">Ran npm test</text>
+      <rect x="42" y="109" width="17" height="15" rx="3" fill="none" stroke="#929299"/><path d="m47 114 3 2-3 2m6 1h2" fill="none" stroke="#929299" stroke-width="1.2"/>
+      <text x="72" y="122">Ran npm run build</text>
+      <path d="M44 145h12l4 4-13 13-7 1 1-7z" fill="none" stroke="#929299" stroke-width="1.3"/>
+      <text x="72" y="158">Edited addons/auto-expand-activity/index.js</text>
+      <rect x="42" y="175" width="17" height="15" rx="3" fill="none" stroke="#929299"/><path d="m47 180 3 2-3 2m6 1h2" fill="none" stroke="#929299" stroke-width="1.2"/>
+      <text x="72" y="188">Ran git diff --check</text>
+      <path d="M44 211h12l4 4-13 13-7 1 1-7z" fill="none" stroke="#929299" stroke-width="1.3"/>
+      <text x="72" y="224">Edited README.md</text>
+    </g>
+  </g>
+</svg>

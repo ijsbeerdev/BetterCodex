@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-labelledby="title desc">
+  <title id="title">Kanban activity board inside Codex</title>
+  <desc id="desc">The Codex sidebar remains visible beside compact Old, In Progress, Waiting, and Done task lanes with live activity and code-change totals.</desc>
+  <rect width="640" height="320" rx="18" fill="#111112"/>
+  <rect width="146" height="320" rx="18" fill="#1b1b1d"/>
+  <path d="M146 0v320" stroke="#303034"/>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <g transform="translate(14 17)">
+      <text x="0" y="14" fill="#f1f1f2" font-size="12" font-weight="650">Codex⌄</text>
+      <g transform="translate(0 34)" fill="#c5c5c8" font-size="9.5">
+        <path d="M3 2.5h8M7 0v5" stroke="#c5c5c8" stroke-width="1.1" stroke-linecap="round"/>
+        <text x="18" y="6">New chat</text>
+      </g>
+      <g transform="translate(-6 53)">
+        <rect width="126" height="28" rx="8" fill="#353537"/>
+        <g transform="translate(10 7)" fill="none" stroke="#f1f1f2" stroke-width="1">
+          <rect width="3.5" height="13" rx=".7"/><rect x="5" width="3.5" height="8" rx=".7"/><rect x="10" width="3.5" height="10.5" rx=".7"/>
+        </g>
+        <text x="32" y="18" fill="#f6f6f7" font-size="9.5">Kanban</text>
+      </g>
+      <text x="0" y="108" fill="#77777d" font-size="8" font-weight="650">PINNED</text>
+      <text x="0" y="130" fill="#d0d0d2" font-size="9.5">▱ blackbox</text>
+      <text x="16" y="150" fill="#b7b7bc" font-size="8.5">Build authentication</text>
+      <circle cx="114" cy="147" r="4" fill="none" stroke="#bababe" stroke-width="1.2" stroke-dasharray="7 4"/>
+      <text x="16" y="170" fill="#b7b7bc" font-size="8.5">Review access policy</text>
+      <rect x="82" y="177" width="42" height="13" rx="6.5" fill="#224834"/>
+      <text x="103" y="186.5" text-anchor="middle" fill="#70dda6" font-size="6.5">Waiting</text>
+      <text x="16" y="208" fill="#b7b7bc" font-size="8.5">Update README</text>
+      <circle cx="7" cy="285" r="7" fill="#25374a"/>
+      <text x="18" y="288" fill="#eeeeef" font-size="8.5">blackbox</text>
+    </g>
+
+    <g transform="translate(161 22)">
+      <g fill="#d9d9dc" font-size="9" font-weight="650">
+        <text x="0" y="11">↶</text><text x="15" y="11">Old</text><text x="36" y="11" fill="#66666b" font-weight="500">3</text>
+        <text x="119" y="11">›_</text><text x="139" y="11">In Progress</text><text x="196" y="11" fill="#66666b" font-weight="500">1</text>
+        <text x="251" y="11">⊙</text><text x="269" y="11">Waiting</text><text x="305" y="11" fill="#66666b" font-weight="500">1</text>
+        <text x="370" y="11">✓</text><text x="386" y="11">Done</text><text x="411" y="11" fill="#66666b" font-weight="500">2</text>
+      </g>
+
+      <g transform="translate(0 27)">
+        <g>
+          <rect width="104" height="62" rx="9" fill="#202022"/>
+          <text x="10" y="18" fill="#f0f0f1" font-size="8.5" font-weight="600">Explain gateway logic</text>
+          <text x="10" y="38" fill="#85858b" font-size="7.5">agent-sec</text><text x="93" y="38" text-anchor="end" fill="#85858b" font-size="7.5">1h</text>
+        </g>
+        <g transform="translate(0 70)">
+          <rect width="104" height="62" rx="9" fill="#202022"/>
+          <text x="10" y="18" fill="#f0f0f1" font-size="8.5" font-weight="600">Run an npm command</text>
+          <text x="10" y="38" fill="#85858b" font-size="7.5">forge-site</text><text x="93" y="38" text-anchor="end" fill="#85858b" font-size="7.5">2h</text>
+        </g>
+        <g transform="translate(119)">
+          <rect width="117" height="78" rx="9" fill="#222224"/>
+          <circle cx="12" cy="16" r="4" fill="none" stroke="#d2d2d5" stroke-width="1.2" stroke-dasharray="7 4"/>
+          <text x="22" y="19" fill="#f3f3f4" font-size="8.5" font-weight="600">Build authentication</text>
+          <g fill="#a2a2a7"><circle cx="105" cy="10" r=".8"/><circle cx="109" cy="10" r=".8"/><circle cx="113" cy="10" r=".8"/></g>
+          <text x="10" y="40" fill="#85858b" font-size="7.5">blackbox</text><text x="106" y="40" text-anchor="end" fill="#85858b" font-size="7.5">now</text>
+          <text x="10" y="60" fill="#85858b" font-size="7.5">7 files</text><text x="45" y="60" fill="#4bc982" font-size="7.5">+1,464</text><text x="82" y="60" fill="#e05262" font-size="7.5">−916</text>
+        </g>
+        <g transform="translate(251)">
+          <rect width="104" height="78" rx="9" fill="#202022"/>
+          <text x="10" y="18" fill="#f0f0f1" font-size="8.5" font-weight="600">Review access</text><text x="10" y="30" fill="#f0f0f1" font-size="8.5" font-weight="600">policy</text>
+          <text x="10" y="50" fill="#85858b" font-size="7.5">blackbox</text><text x="93" y="50" text-anchor="end" fill="#85858b" font-size="7.5">2m</text>
+          <text x="10" y="68" fill="#85858b" font-size="7.5">3 files</text><text x="45" y="68" fill="#4bc982" font-size="7.5">+86</text><text x="72" y="68" fill="#e05262" font-size="7.5">−12</text>
+        </g>
+        <g transform="translate(370)">
+          <rect width="104" height="62" rx="9" fill="#202022"/>
+          <text x="10" y="18" fill="#f0f0f1" font-size="8.5" font-weight="600">Update README</text>
+          <text x="10" y="38" fill="#85858b" font-size="7.5">blackbox</text><text x="93" y="38" text-anchor="end" fill="#85858b" font-size="7.5">1h</text>
+        </g>
+        <g transform="translate(370 70)">
+          <rect width="104" height="78" rx="9" fill="#202022"/>
+          <text x="10" y="18" fill="#f0f0f1" font-size="8.5" font-weight="600">Ship onboarding</text>
+          <text x="10" y="40" fill="#85858b" font-size="7.5">website</text><text x="93" y="40" text-anchor="end" fill="#85858b" font-size="7.5">1d</text>
+          <text x="10" y="60" fill="#85858b" font-size="7.5">5 files</text><text x="45" y="60" fill="#4bc982" font-size="7.5">+214</text><text x="75" y="60" fill="#e05262" font-size="7.5">−31</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

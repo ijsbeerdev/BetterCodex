@@ -33,7 +33,7 @@ const clientPath = await resolveClientPath();
 async function createExpression() {
   const clientSource = await readFile(clientPath, "utf8");
   const addons = await loadAddons(addonsRoot);
-  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addons };
+  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons };
   return `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
 }
 
