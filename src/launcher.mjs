@@ -8,7 +8,6 @@ import { watchAddons } from "./hot-reload.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
-const clientSource = await readFile(join(runtimeRoot, "client.js"), "utf8");
 const port = Number(process.env.BLACKBOX_DEBUG_PORT || 11983);
 
 async function resolveAddonsRoot() {
@@ -21,7 +20,18 @@ async function resolveAddonsRoot() {
 
 const addonsRoot = await resolveAddonsRoot();
 
+async function resolveClientPath() {
+  const developmentPath = packageInfo.developmentClientPath;
+  if (developmentPath) {
+    try { await access(developmentPath); return developmentPath; } catch {}
+  }
+  return join(runtimeRoot, "client.js");
+}
+
+const clientPath = await resolveClientPath();
+
 async function createExpression() {
+  const clientSource = await readFile(clientPath, "utf8");
   const addons = await loadAddons(addonsRoot);
   const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addons };
   return `${clientSource}\n;globalThis.__BLACKBOX_INJECT__(${JSON.stringify(payload)});`;
@@ -76,7 +86,7 @@ async function waitForDebugger() {
 }
 
 async function main() {
-  await log(`Starting Blackbox ${packageInfo.version}; watching add-ons in ${addonsRoot}.`);
+  await log(`Starting Blackbox ${packageInfo.version}; watching ${addonsRoot} and ${clientPath}.`);
   let targets;
   let child;
   try { targets = await getTargets(); }
@@ -99,24 +109,27 @@ async function main() {
   const sessions = new Map();
   let reloadQueue = Promise.resolve();
   let addonWatcher;
+  let clientWatcher;
+  const queueReload = ({ eventType, filename }) => {
+    reloadQueue = reloadQueue.then(async () => {
+      const nextExpression = await createExpression();
+      let reloaded = 0;
+      for (const session of sessions.values()) {
+        const state = await session.send("Runtime.evaluate", {
+          expression: "Boolean(globalThis.__BLACKBOX_HOT_RELOAD_ACTIVE__)",
+          returnByValue: true
+        });
+        if (state.result?.value !== true) continue;
+        await replaceInjection(session, nextExpression);
+        reloaded += 1;
+      }
+      if (reloaded > 0) currentExpression = nextExpression;
+      await log(`Hot reload ${eventType} ${filename}: refreshed ${reloaded} renderer(s).`);
+    }).catch((error) => log(`Hot reload failed: ${error.message}`));
+  };
   try {
-    addonWatcher = watchAddons(addonsRoot, ({ eventType, filename }) => {
-      reloadQueue = reloadQueue.then(async () => {
-        const nextExpression = await createExpression();
-        let reloaded = 0;
-        for (const session of sessions.values()) {
-          const state = await session.send("Runtime.evaluate", {
-            expression: "Boolean(globalThis.__BLACKBOX_HOT_RELOAD_ACTIVE__)",
-            returnByValue: true
-          });
-          if (state.result?.value !== true) continue;
-          await replaceInjection(session, nextExpression);
-          reloaded += 1;
-        }
-        if (reloaded > 0) currentExpression = nextExpression;
-        await log(`Hot reload ${eventType} ${filename}: refreshed ${reloaded} renderer(s).`);
-      }).catch((error) => log(`Hot reload failed: ${error.message}`));
-    });
+    addonWatcher = watchAddons(addonsRoot, queueReload);
+    clientWatcher = watchAddons(clientPath, queueReload, { recursive: false });
   } catch (error) {
     await log(`Could not watch add-ons: ${error.message}`);
   }
@@ -143,6 +156,7 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
   addonWatcher?.close();
+  clientWatcher?.close();
   await reloadQueue;
   for (const session of sessions.values()) session.close();
 }

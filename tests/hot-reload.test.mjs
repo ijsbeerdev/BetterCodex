@@ -23,19 +23,16 @@ test("Hot Reload is the only bundled add-on and cleans up when disabled", async 
   dom.window.document.querySelector("button").getBoundingClientRect = () => ({
     left: 235, top: 735, right: 267, bottom: 767, width: 32, height: 32
   });
+  dom.window.matchMedia = () => ({ matches: false });
+  dom.window.requestAnimationFrame = (callback) => { callback(); return 1; };
   dom.window.eval(clientSource);
   dom.window.__BLACKBOX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
   await delay(25);
   assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, true);
-  const shadow = dom.window.document.getElementById("blackbox-client-root").shadowRoot;
-  const launcher = shadow.querySelector(".launcher");
-  assert.equal(launcher.style.left, "197px");
-  assert.equal(launcher.style.top, "735px");
-  assert.ok(shadow.getElementById("blackbox-addon-hot-reload-layout"));
+  assert.ok(dom.window.document.getElementById("blackbox-native-launcher"));
   dom.window.Blackbox.setEnabled("hot-reload", false);
   assert.equal(dom.window.__BLACKBOX_HOT_RELOAD_ACTIVE__, undefined);
-  assert.equal(launcher.style.left, "");
-  assert.equal(shadow.getElementById("blackbox-addon-hot-reload-layout"), null);
+  assert.ok(dom.window.document.getElementById("blackbox-native-launcher"));
   dom.window.Blackbox.destroy();
 });
 
@@ -58,6 +55,19 @@ test("add-on file events are debounced", async () => {
   assert.deepEqual(changes, [{ eventType: "rename", filename: "two.js" }]);
   watcher.close();
   assert.equal(closed, true);
+});
+
+test("file watching can disable recursive mode for the client bundle", () => {
+  let observedOptions;
+  const watcher = watchAddons("C:\\client.js", () => {}, {
+    recursive: false,
+    watchImpl(root, options) {
+      observedOptions = options;
+      return { close() {} };
+    }
+  });
+  assert.equal(observedOptions.recursive, false);
+  watcher.close();
 });
 
 test("replaces the persistent injection script after evaluating the update", async () => {

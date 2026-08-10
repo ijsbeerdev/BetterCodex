@@ -1,14 +1,19 @@
 (() => {
   const ROOT_ID = "blackbox-client-root";
+  const LAUNCHER_ID = "blackbox-native-launcher";
   const STORAGE_KEY = "blackbox:addons:v1";
 
   function install(payload) {
     globalThis.Blackbox?.destroy?.();
     document.getElementById(ROOT_ID)?.remove();
+    document.getElementById(LAUNCHER_ID)?.remove();
 
     const catalog = new Map(payload.addons.map((addon) => [addon.manifest.id, addon]));
     const implementations = new Map();
     const active = new Set();
+    const controller = new AbortController();
+    let launcher;
+    let previousOverflow = "";
     let stored = {};
     try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch {}
 
@@ -36,6 +41,114 @@
       active.delete(id);
     };
 
+    const host = document.createElement("div");
+    host.id = ROOT_ID;
+    host.style.cssText = "display:none;position:fixed;inset:0;z-index:2147483647";
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = `
+      <style>
+        :host { all:initial; --bg:#fff; --side:#f7f7f7; --surface:#f3f3f3; --surface-hover:#e9e9e9; --border:#dedede;
+          --text:#161616; --muted:#666; --accent:#111; color-scheme:light; }
+        :host([data-theme="dark"]) { --bg:#0a0a0a; --side:#0d0d0d; --surface:#171717; --surface-hover:#202020;
+          --border:#292929; --text:#f2f2f2; --muted:#9a9a9a; --accent:#fff; color-scheme:dark; }
+        * { box-sizing:border-box; }
+        button, a, input { font:inherit; }
+        .view { width:100vw; height:100vh; display:grid; grid-template-rows:44px minmax(0,1fr); color:var(--text);
+          background:var(--bg); font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+        .topbar { grid-column:1/-1; display:flex; align-items:center; padding:0 12px; border-bottom:1px solid var(--border); }
+        .back { display:flex; align-items:center; gap:7px; height:30px; padding:0 8px; color:var(--muted); background:transparent;
+          border:0; border-radius:7px; cursor:pointer; }
+        .back:hover { color:var(--text); background:var(--surface-hover); }
+        .shell { min-height:0; display:grid; grid-template-columns:256px minmax(0,1fr); }
+        .sidebar { padding:22px 10px; border-right:1px solid var(--border); background:var(--side); }
+        .brand { display:flex; align-items:center; gap:9px; padding:0 9px 18px; font-size:14px; font-weight:650; }
+        .box { width:14px; height:14px; border-radius:3px; background:var(--accent); }
+        .caption { padding:8px 9px 6px; color:var(--muted); font-size:11px; font-weight:650; }
+        .nav { width:100%; height:32px; display:flex; align-items:center; padding:0 9px; color:var(--text); background:transparent;
+          border:0; border-radius:7px; text-align:left; cursor:pointer; }
+        .nav:hover, .nav.active { background:var(--surface-hover); }
+        .main { min-width:0; overflow:auto; }
+        .content { width:min(760px,calc(100% - 64px)); margin:0 auto; padding:58px 0 100px; }
+        h1 { margin:0 0 34px; font-size:22px; line-height:1.2; font-weight:650; }
+        h2 { margin:0 0 10px; font-size:13px; font-weight:650; }
+        .section { margin-bottom:36px; scroll-margin-top:30px; }
+        .card { overflow:hidden; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+        .row { min-height:58px; display:flex; align-items:center; gap:16px; padding:11px 14px; }
+        .row + .row { border-top:1px solid var(--border); }
+        .copy { min-width:0; flex:1; }
+        .name { font-weight:600; }
+        .description { margin-top:2px; color:var(--muted); font-size:12px; }
+        .version { flex:none; color:var(--muted); font-variant-numeric:tabular-nums; }
+        .repo { flex:none; padding:5px 9px; border:1px solid var(--border); border-radius:7px; color:var(--text);
+          background:var(--surface-hover); text-decoration:none; }
+        .repo:hover { border-color:var(--muted); }
+        .switch { position:relative; width:36px; height:20px; flex:0 0 auto; }
+        .switch input { position:absolute; opacity:0; pointer-events:none; }
+        .track { position:absolute; inset:0; border-radius:99px; background:#555; cursor:pointer; transition:.15s; }
+        .track::after { content:""; position:absolute; left:3px; top:3px; width:14px; height:14px; border-radius:50%;
+          background:#fff; transition:.15s; }
+        input:checked + .track { background:#1688e8; }
+        input:checked + .track::after { transform:translateX(16px); }
+        .empty { padding:18px 14px; color:var(--muted); }
+        @media (max-width:700px) { .shell { grid-template-columns:190px minmax(0,1fr); } .content { width:calc(100% - 32px); } }
+      </style>
+      <div class="view" role="dialog" aria-modal="true" aria-labelledby="blackbox-title">
+        <header class="topbar"><button class="back" type="button" aria-label="Back to app"><span>←</span><span>Back to app</span></button></header>
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="brand"><span class="box"></span><span>Blackbox</span></div>
+            <div class="caption">Blackbox</div>
+            <button class="nav active" type="button" data-target="general">General</button>
+            <button class="nav" type="button" data-target="addons">Add-ons</button>
+          </aside>
+          <main class="main">
+            <div class="content">
+              <h1 id="blackbox-title">Blackbox</h1>
+              <section class="section" id="general"><h2>General</h2><div class="card">
+                <div class="row"><div class="copy"><div class="name">Version</div><div class="description">Installed Blackbox runtime</div></div><div class="version">${escapeHtml(payload.version)}</div></div>
+                <div class="row"><div class="copy"><div class="name">Source code</div><div class="description">View Blackbox on GitHub</div></div>
+                  <a class="repo" href="${escapeAttribute(payload.repository)}" target="_blank" rel="noreferrer">Open ↗</a></div>
+              </div></section>
+              <section class="section" id="addons"><h2>Add-ons</h2><div class="card addons"></div></section>
+            </div>
+          </main>
+        </div>
+      </div>`;
+
+    const addonList = shadow.querySelector(".addons");
+    if (!payload.addons.length) addonList.innerHTML = '<div class="empty">No add-ons installed.</div>';
+    for (const addon of payload.addons) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<div class="copy"><div class="name">${escapeHtml(addon.manifest.name)}</div>
+        <div class="description">${escapeHtml(addon.manifest.description)}</div></div>
+        <label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
+        <span class="track"></span></label>`;
+      const input = row.querySelector("input");
+      input.checked = isEnabled(addon.manifest.id);
+      input.addEventListener("change", () => { input.checked = api.setEnabled(addon.manifest.id, input.checked); });
+      addonList.append(row);
+    }
+
+    const updateTheme = () => {
+      const prefersDark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = document.documentElement.classList.contains("electron-dark") ||
+        (!document.documentElement.classList.contains("electron-light") && prefersDark);
+      host.dataset.theme = dark ? "dark" : "light";
+      launcher?.querySelector("[data-blackbox-box]")?.style.setProperty("background-color", dark ? "#fff" : "#000");
+    };
+    const open = () => {
+      previousOverflow = document.body?.style.overflow || "";
+      if (document.body) document.body.style.overflow = "hidden";
+      host.style.display = "block";
+      shadow.querySelector(".back").focus();
+    };
+    const close = () => {
+      host.style.display = "none";
+      if (document.body) document.body.style.overflow = previousOverflow;
+      launcher?.focus();
+    };
+
     const api = {
       version: payload.version,
       repository: payload.repository,
@@ -52,103 +165,71 @@
         return active.has(id);
       },
       isEnabled,
+      open,
+      close,
       destroy() {
+        controller.abort();
         for (const id of [...active]) stop(id);
-        document.getElementById(ROOT_ID)?.remove();
+        if (document.body) document.body.style.overflow = previousOverflow;
+        launcher?.remove();
+        host.remove();
         if (globalThis.Blackbox === api) delete globalThis.Blackbox;
       }
     };
     globalThis.Blackbox = api;
 
-    const host = document.createElement("div");
-    host.id = ROOT_ID;
-    host.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483647";
-    const shadow = host.attachShadow({ mode: "open" });
-    shadow.innerHTML = `
-      <style>
-        :host { all: initial; color-scheme: dark; }
-        * { box-sizing: border-box; }
-        button, a { font: inherit; }
-        .launcher { pointer-events:auto; position:fixed; left:8px; bottom:55px; width:239px; height:36px;
-          display:flex; align-items:center; gap:9px; padding:0 10px; border:0; border-radius:8px;
-          color:#eee; background:transparent; cursor:pointer; font:13px/1 system-ui,-apple-system,"Segoe UI",sans-serif; text-align:left; }
-        .launcher:hover { background:#1d1d1d; }
-        .mark { width:20px; height:20px; display:grid; place-items:center; border-radius:6px;
-          color:white; font-size:11px; font-weight:750; background:linear-gradient(145deg,#8b5cf6,#5b21b6); }
-        .backdrop { pointer-events:auto; position:fixed; inset:0; display:none; align-items:flex-end; justify-content:flex-start;
-          padding:0 0 99px 8px; background:rgba(0,0,0,.16); }
-        .backdrop.open { display:flex; }
-        .panel { width:310px; max-height:calc(100vh - 130px); overflow:auto; color:#ececec; background:#171717;
-          border:1px solid #333; border-radius:12px; box-shadow:0 18px 55px rgba(0,0,0,.55);
-          font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif; }
-        .head { display:flex; align-items:flex-start; justify-content:space-between; padding:16px 16px 13px; }
-        h2 { margin:0 0 3px; font-size:15px; font-weight:650; }
-        .version { color:#929292; font-size:12px; }
-        .close { width:28px; height:28px; border:0; border-radius:7px; color:#aaa; background:transparent; cursor:pointer; }
-        .close:hover { color:white; background:#292929; }
-        .repo { display:block; margin:0 16px 14px; color:#b6a7ff; text-decoration:none; }
-        .repo:hover { text-decoration:underline; }
-        .section-title { padding:11px 16px 7px; border-top:1px solid #2b2b2b; color:#8f8f8f; font-size:11px;
-          font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
-        .addon { display:flex; gap:12px; align-items:center; padding:10px 16px; }
-        .addon-copy { min-width:0; flex:1; }
-        .addon-name { color:#eee; font-weight:600; }
-        .addon-description { margin-top:2px; color:#979797; font-size:12px; }
-        .switch { position:relative; width:34px; height:20px; flex:0 0 auto; }
-        .switch input { position:absolute; opacity:0; }
-        .track { position:absolute; inset:0; border-radius:99px; background:#444; cursor:pointer; transition:.15s; }
-        .track::after { content:""; position:absolute; left:3px; top:3px; width:14px; height:14px; border-radius:50%;
-          background:white; transition:.15s; }
-        input:checked + .track { background:#7c3aed; }
-        input:checked + .track::after { transform:translateX(14px); }
-        .empty { padding:2px 16px 16px; color:#888; }
-      </style>
-      <button class="launcher" type="button" aria-label="Open Blackbox"><span class="mark">B</span><span>Blackbox</span></button>
-      <div class="backdrop" role="presentation">
-        <section class="panel" role="dialog" aria-modal="true" aria-labelledby="blackbox-title">
-          <div class="head"><div><h2 id="blackbox-title">Blackbox</h2><div class="version">Version ${escapeHtml(payload.version)}</div></div>
-            <button class="close" type="button" aria-label="Close">✕</button></div>
-          <a class="repo" href="${escapeAttribute(payload.repository)}" target="_blank" rel="noreferrer">View source repository ↗</a>
-          <div class="section-title">Add-ons</div>
-          <div class="addons"></div>
-        </section>
-      </div>`;
+    const findHelpButton = () => [...document.querySelectorAll("button")].find((element) => {
+      const rect = element.getBoundingClientRect();
+      return /open help menu/i.test(element.getAttribute("aria-label") || "") && rect.bottom > innerHeight - 100;
+    });
+    const mountLauncher = () => {
+      if (launcher?.isConnected) return;
+      const help = findHelpButton();
+      if (!help?.parentElement) return;
+      launcher = help.cloneNode(false);
+      launcher.id = LAUNCHER_ID;
+      for (const attribute of ["aria-haspopup", "aria-expanded", "data-state", "data-disabled"]) launcher.removeAttribute(attribute);
+      launcher.removeAttribute("disabled");
+      launcher.setAttribute("aria-label", "Open Blackbox");
+      launcher.title = "Blackbox";
+      launcher.innerHTML = '<span data-blackbox-box aria-hidden="true" style="display:block;width:14px;height:14px;border-radius:3px"></span>';
+      launcher.addEventListener("click", open, { signal: controller.signal });
+      help.before(launcher);
+      updateTheme();
+    };
 
-    const addonList = shadow.querySelector(".addons");
-    if (!payload.addons.length) addonList.innerHTML = '<div class="empty">No add-ons installed.</div>';
-    for (const addon of payload.addons) {
-      const row = document.createElement("div");
-      row.className = "addon";
-      row.innerHTML = `<div class="addon-copy"><div class="addon-name">${escapeHtml(addon.manifest.name)}</div>
-        <div class="addon-description">${escapeHtml(addon.manifest.description)}</div></div>
-        <label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
-        <span class="track"></span></label>`;
-      const input = row.querySelector("input");
-      input.checked = isEnabled(addon.manifest.id);
-      input.addEventListener("change", () => { input.checked = api.setEnabled(addon.manifest.id, input.checked); });
-      addonList.append(row);
+    let mountScheduled = false;
+    const scheduleMount = () => {
+      if (mountScheduled) return;
+      mountScheduled = true;
+      setTimeout(() => { mountScheduled = false; mountLauncher(); updateTheme(); }, 0);
+    };
+    const observer = new MutationObserver(scheduleMount);
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    controller.signal.addEventListener("abort", () => observer.disconnect(), { once: true });
+
+    shadow.querySelector(".back").addEventListener("click", close, { signal: controller.signal });
+    for (const nav of shadow.querySelectorAll(".nav")) {
+      nav.addEventListener("click", () => {
+        shadow.querySelectorAll(".nav").forEach((item) => item.classList.toggle("active", item === nav));
+        shadow.getElementById(nav.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, { signal: controller.signal });
     }
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && host.style.display !== "none") close(); }, { signal: controller.signal });
 
-    const backdrop = shadow.querySelector(".backdrop");
-    const close = () => backdrop.classList.remove("open");
-    shadow.querySelector(".launcher").addEventListener("click", () => backdrop.classList.add("open"));
-    shadow.querySelector(".close").addEventListener("click", close);
-    backdrop.addEventListener("click", (event) => { if (event.target === backdrop) close(); });
-    document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); }, { signal: abortSignal(api) });
-    (document.body || document.documentElement).append(host);
+    const mount = () => {
+      if (!host.isConnected) document.body.append(host);
+      updateTheme();
+      mountLauncher();
+    };
+    if (document.body) mount();
+    else document.addEventListener("DOMContentLoaded", mount, { once: true, signal: controller.signal });
 
     for (const addon of payload.addons) {
       try { (0, eval)(addon.source); }
       catch (error) { console.error(`[Blackbox] Could not load ${addon.manifest.id}`, error); }
     }
     return true;
-  }
-
-  function abortSignal(api) {
-    const controller = new AbortController();
-    const destroy = api.destroy;
-    api.destroy = () => { controller.abort(); destroy(); };
-    return controller.signal;
   }
 
   function escapeHtml(value) {

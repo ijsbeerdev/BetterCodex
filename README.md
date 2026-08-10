@@ -14,7 +14,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\patch.ps1
 
 Quit Codex completely, then launch it through the normal Start menu or taskbar entry. The first window may briefly disappear while the watcher relaunches it with Blackbox. A separate **Blackbox for Codex** shortcut remains available as a fallback.
 
-The bottom-left Blackbox button opens a compact panel containing:
+The bottom-left Blackbox button is inserted into Codex's native account toolbar beside Help. Its solid square follows the active light or dark theme. It opens a full-window settings-style Blackbox view containing:
 
 - the installed Blackbox version;
 - a link to the source repository;
@@ -22,7 +22,7 @@ The bottom-left Blackbox button opens a compact panel containing:
 
 ## Hot Reload
 
-Hot Reload is Blackbox's first bundled add-on and is enabled by default. While Codex is open, changes inside this repository's `addons/` directory are debounced and reinjected into every Blackbox renderer. Add, edit, or remove an add-on without restarting Codex. Turn **Hot Reload** off in the Blackbox panel to pause file watching for the renderer.
+Hot Reload is Blackbox's first bundled add-on and is enabled by default. While Codex is open, changes to the injected client or anything inside this repository's `addons/` directory are debounced and reinjected into every Blackbox renderer. Add, edit, or remove an add-on—or refine the Blackbox UI—without restarting Codex. Turn **Hot Reload** off in the Blackbox view to pause updates for the renderer.
 
 ## Add-ons
 

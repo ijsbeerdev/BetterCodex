@@ -20,6 +20,7 @@ await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
   repository: packageInfo.repository,
   type: "module",
   developmentAddonsPath: join(repoRoot, "addons"),
+  developmentClientPath: join(repoRoot, "src", "client.js"),
   addons: addons.map(({ manifest }) => manifest)
 }, null, 2)}\n`);
 
