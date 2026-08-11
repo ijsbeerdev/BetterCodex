@@ -94,3 +94,13 @@ export async function replaceInjection(connection, expression) {
     throw error;
   }
 }
+
+export async function updatePersistentInjection(connection, expression) {
+  const previousIdentifier = connection.bettercodexScriptIdentifier;
+  const registration = await connection.send("Page.addScriptToEvaluateOnNewDocument", { source: expression });
+  connection.bettercodexScriptIdentifier = registration.identifier;
+  if (previousIdentifier) {
+    await connection.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: previousIdentifier });
+  }
+  return true;
+}

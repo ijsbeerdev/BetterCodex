@@ -10,6 +10,7 @@ $installRoot = Join-Path $localAppData "BetterCodex"
 $startMenu = Join-Path ([Environment]::GetFolderPath("Programs")) "BetterCodex for ChatGPT Codex.lnk"
 $desktop = Join-Path ([Environment]::GetFolderPath("Desktop")) "BetterCodex for ChatGPT Codex.lnk"
 $startup = Join-Path ([Environment]::GetFolderPath("Startup")) "BetterCodex ChatGPT Codex Watcher.lnk"
+$notificationMarker = Join-Path $installRoot "patch-notification-pending"
 
 if (-not (Test-Path -LiteralPath (Join-Path $runtimeSource "package.json"))) {
     throw "The BetterCodex runtime is missing. Extract the entire release ZIP before running the installer."
@@ -72,9 +73,13 @@ New-BetterCodexShortcut $startMenu "start.ps1" "Launch the official ChatGPT Code
 New-BetterCodexShortcut $desktop "start.ps1" "Launch the official ChatGPT Codex app with BetterCodex"
 New-BetterCodexShortcut $startup "watcher.ps1" "Load BetterCodex when the official ChatGPT Codex app starts"
 
+if ($PSCmdlet.ShouldProcess($notificationMarker, "Queue the successful patch notification")) {
+    New-Item -ItemType File -Path $notificationMarker -Force | Out-Null
+}
+
 if ($PSCmdlet.ShouldProcess("BetterCodex launch watcher", "Start the normal-launch watcher")) {
     $watcherScript = Join-Path $installRoot "watcher.ps1"
-    $watcherArguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -IgnoreExisting' -f $watcherScript
+    $watcherArguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $watcherScript
     Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $watcherArguments -WorkingDirectory $installRoot -WindowStyle Hidden
 }
 
@@ -83,5 +88,5 @@ if ($WhatIfPreference) {
     Write-Host "BetterCodex installer dry run completed." -ForegroundColor Green
 } else {
     Write-Host "BetterCodex is installed." -ForegroundColor Green
-    Write-Host "Quit ChatGPT Codex completely, then open it normally. The package icon will appear beside Help."
+    Write-Host "The launch watcher is active. An open Codex window may briefly restart, then the package icon will appear beside Help."
 }

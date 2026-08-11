@@ -1,7 +1,7 @@
 {
   "id": "project-kanban",
   "name": "Kanban",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Groups Codex tasks by live activity, approval state, completion, and code-change totals.",
   "category": "addon",
   "tags": ["Projects", "Productivity"],

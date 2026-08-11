@@ -9,6 +9,7 @@ $installRoot = Join-Path $localAppData "BetterCodex"
 $startMenu = Join-Path ([Environment]::GetFolderPath("Programs")) "BetterCodex for ChatGPT Codex.lnk"
 $desktop = Join-Path ([Environment]::GetFolderPath("Desktop")) "BetterCodex for ChatGPT Codex.lnk"
 $startup = Join-Path ([Environment]::GetFolderPath("Startup")) "BetterCodex ChatGPT Codex Watcher.lnk"
+$notificationMarker = Join-Path $installRoot "patch-notification-pending"
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     throw "Node.js was not found on PATH. Install Node.js 22 or newer first."
@@ -67,11 +68,15 @@ if ($PSCmdlet.ShouldProcess($startup, "Create the normal-launch watcher")) {
     $shortcut.Save()
 }
 
-if ($PSCmdlet.ShouldProcess("BetterCodex launch watcher", "Start the watcher without interrupting the current Codex session")) {
+if ($PSCmdlet.ShouldProcess($notificationMarker, "Queue the successful patch notification")) {
+    New-Item -ItemType File -Path $notificationMarker -Force | Out-Null
+}
+
+if ($PSCmdlet.ShouldProcess("BetterCodex launch watcher", "Start the watcher and load BetterCodex into the current Codex session")) {
     $watcherScript = Join-Path $installRoot "watcher.ps1"
     Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
-        -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watcherScript`" -IgnoreExisting" `
+        -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watcherScript`"" `
         -WorkingDirectory $installRoot -WindowStyle Hidden
 }
 
-Write-Host "BetterCodex is patched. Quit ChatGPT Codex completely, then launch it normally."
+Write-Host "BetterCodex is patched and the launch watcher is active. An open Codex window may briefly restart while BetterCodex loads."

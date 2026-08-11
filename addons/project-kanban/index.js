@@ -12,6 +12,7 @@
       const SUPPRESSED_NAV_ATTRIBUTE = "data-bettercodex-project-kanban-suppressed-nav";
       const STYLE_ATTRIBUTE = "data-bettercodex-project-kanban-style";
       const STORAGE_KEY = "bettercodex.project-kanban.v1";
+      const preferenceStorage = BetterCodex.storage || localStorage;
       const CHAT_PATH = /\/(?:tasks?|threads?|chats?|t)\/[^/?#]+/i;
       const STATUSES = ["old", "in-progress", "waiting", "done"];
       const STATUS_LABELS = {
@@ -71,12 +72,13 @@
 
       const loadCards = () => {
         try {
-          const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-          if (!Array.isArray(stored.cards)) return;
+          const stored = JSON.parse(preferenceStorage.getItem(STORAGE_KEY) || "{}");
+          if (stored.version !== 3 || !Array.isArray(stored.cards)) return;
           for (const item of stored.cards) {
-            if (!item || typeof item.id !== "string" || typeof item.title !== "string") continue;
+            if (!item || typeof item.id !== "string" || typeof item.title !== "string" || !item.native || !item.projectLinked) continue;
             const progress = normalizeText(item.progress);
             const storedProject = normalizeText(item.project);
+            if (!storedProject || typeof item.href !== "string" || !item.href) continue;
             state.cards.set(item.id, {
               id: item.id,
               title: normalizeText(item.title).slice(0, 240),
@@ -85,6 +87,7 @@
               progress,
               href: typeof item.href === "string" ? item.href : "",
               native: Boolean(item.native),
+              projectLinked: true,
               hidden: Boolean(item.hidden),
               filesChanged: parseCount(item.filesChanged),
               additions: parseCount(item.additions),
@@ -100,8 +103,8 @@
 
       const saveCards = () => {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            version: 2,
+          preferenceStorage.setItem(STORAGE_KEY, JSON.stringify({
+            version: 3,
             cards: [...state.cards.values()].map((card) => ({
               id: card.id,
               title: card.title,
@@ -110,6 +113,7 @@
               progress: card.progress,
               href: card.href,
               native: card.native,
+              projectLinked: card.projectLinked,
               hidden: card.hidden,
               filesChanged: card.filesChanged,
               additions: card.additions,
@@ -123,7 +127,12 @@
         }
       };
 
-      const findNewChatControl = () => [...document.querySelectorAll("button, a[href]")].find((node) => {
+      const findProjectNavigation = () => {
+        const projectRow = document.querySelector("[data-app-action-sidebar-project-row]");
+        return projectRow?.closest("nav, [role='navigation'], aside") || null;
+      };
+
+      const findNewChatControl = (scope = findProjectNavigation()) => scope && [...scope.querySelectorAll("button, a[href]")].find((node) => {
         if (node.closest(`[${ROOT_ATTRIBUTE}], [${LAUNCHER_ATTRIBUTE}], #bettercodex-client-root`)) return false;
         const visibleText = normalizeText(node.textContent).slice(0, 80);
         const label = `${node.getAttribute("aria-label") || ""} ${node.getAttribute("title") || ""} ${visibleText}`;
@@ -182,25 +191,7 @@
           const label = projectLabel(projectRow);
           if (label) return label;
         }
-
-        let scope = chatRow(control);
-        while (scope && scope.closest("aside")) {
-          for (let sibling = scope.previousElementSibling; sibling; sibling = sibling.previousElementSibling) {
-            const row = sibling.matches("[data-app-action-sidebar-project-row]")
-              ? sibling
-              : [...sibling.querySelectorAll("[data-app-action-sidebar-project-row]")].at(-1);
-            const label = projectLabel(row);
-            if (label) return label;
-          }
-          scope = scope.parentElement;
-        }
-
-        const selectedProject = document.querySelector([
-          "[data-app-action-sidebar-project-row][aria-expanded='true']",
-          "[data-app-action-sidebar-project-row][aria-selected='true']",
-          "[data-app-action-sidebar-project-row][data-state='open']"
-        ].join(", "));
-        return projectLabel(selectedProject);
+        return "";
       };
 
       const extractTitle = (control) => {
@@ -306,6 +297,21 @@
         return busy ? { progress: "Running", status: "in-progress" } : { progress: "", status: null };
       };
 
+      const readPushState = (active) => {
+        if (!active) return null;
+        const main = [...document.querySelectorAll("main")]
+          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        if (!main) return null;
+        const labels = [...main.querySelectorAll("[data-slot='thread-summary-panel-item-label']")];
+        const commitOrPush = labels.find((label) => /^commit or push$/i.test(normalizeText(label.textContent)))
+          ?.closest("button, [role='button']");
+        if (commitOrPush) return !commitOrPush.hasAttribute("disabled") && commitOrPush.getAttribute("aria-disabled") !== "true";
+        const hasGitSummary = labels.some((label) => /^changes$/i.test(normalizeText(label.textContent)))
+          && (labels.some((label) => /^local$/i.test(normalizeText(label.textContent)))
+            || Boolean(main.querySelector("button[title*='branch' i]")));
+        return hasGitSummary ? false : null;
+      };
+
       const isActiveChatRunning = (key, control) => {
         const row = chatRow(control);
         const busySelector = "[aria-busy='true'], [data-state='loading'], [data-state='running'], [data-status='running'], [class*='animate-spin'], [class*='spinner']";
@@ -322,10 +328,14 @@
       const scanNativeChats = () => {
         let changed = false;
         const discovered = new Map();
-        for (const control of document.querySelectorAll("[data-app-action-sidebar-thread-row], a[href]")) {
+        const projectNavigation = findProjectNavigation();
+        if (!projectNavigation) return false;
+        for (const control of projectNavigation.querySelectorAll("[data-app-action-sidebar-thread-row], a[href]")) {
           if (!isChatControl(control)) continue;
           const key = chatKey(control);
           if (!key || discovered.has(key)) continue;
+          const project = inferProject(control);
+          if (!project) continue;
           discovered.set(key, control);
           state.nativeLinks.set(key, control);
 
@@ -340,11 +350,12 @@
           const card = existing || {
             id,
             title: extractTitle(control),
-            project: inferProject(control),
+            project,
             status: "old",
             progress: "",
             href: key,
             native: true,
+            projectLinked: true,
             hidden: false,
             filesChanged: 0,
             additions: 0,
@@ -356,14 +367,30 @@
           const activity = readNativeActivity(control);
           const running = activity.status === "in-progress" || isActiveChatRunning(key, control);
           const wasUnfinished = card.status === "in-progress" || card.status === "waiting";
+          const wasWaitingToPush = card.status === "waiting" && card.progress === "Commit or push";
 
           card.title = extractTitle(control);
-          card.project = inferProject(control) || card.project;
+          card.project = project;
           card.href = key;
           card.native = true;
+          card.projectLinked = true;
+          const active = control.getAttribute("data-app-action-sidebar-thread-active") === "true" || control.getAttribute("aria-current") === "page" || key === `${location.pathname}${location.search}`;
+          const pushPending = readPushState(active);
           if (running) {
             card.status = "in-progress";
             card.progress = "Running";
+          } else if (activity.status === "waiting") {
+            card.status = activity.status;
+            card.progress = activity.progress;
+          } else if (pushPending === true) {
+            card.status = "waiting";
+            card.progress = "Commit or push";
+          } else if (pushPending === false && wasWaitingToPush) {
+            card.status = "done";
+            card.progress = "Complete";
+          } else if (wasWaitingToPush) {
+            card.status = "waiting";
+            card.progress = "Commit or push";
           } else if (activity.status) {
             card.status = activity.status;
             card.progress = activity.progress;
@@ -372,7 +399,6 @@
             card.progress = "Complete";
           }
 
-          const active = control.getAttribute("data-app-action-sidebar-thread-active") === "true" || control.getAttribute("aria-current") === "page" || key === `${location.pathname}${location.search}`;
           const changes = readChangeSummary(control, active);
           if (changes) Object.assign(card, changes);
           const activityTime = readActivityTime(control);
@@ -386,11 +412,10 @@
           state.cards.set(card.id, card);
         }
 
-        for (const card of state.cards.values()) {
-          if (!card.native || card.status !== "in-progress" || !card.href || discovered.has(card.href)) continue;
-          card.status = "done";
-          card.progress = "Complete";
-          card.updatedAt = Date.now();
+        for (const card of [...state.cards.values()]) {
+          if (card.native && card.projectLinked && card.href && discovered.has(card.href)) continue;
+          state.cards.delete(card.id);
+          if (card.href) state.nativeLinks.delete(card.href);
           changed = true;
         }
 
@@ -498,9 +523,11 @@
 
       const findNativeChatControl = (card) => {
         const linked = state.nativeLinks.get(card.href);
-        if (linked?.isConnected) return linked;
-        return [...document.querySelectorAll("[data-app-action-sidebar-thread-row], a[href]")]
-          .find((candidate) => isChatControl(candidate) && chatKey(candidate) === card.href) || null;
+        if (linked?.isConnected && inferProject(linked)) return linked;
+        const projectNavigation = findProjectNavigation();
+        if (!projectNavigation) return null;
+        return [...projectNavigation.querySelectorAll("[data-app-action-sidebar-thread-row], a[href]")]
+          .find((candidate) => isChatControl(candidate) && inferProject(candidate) && chatKey(candidate) === card.href) || null;
       };
 
       const openNativeChat = (card) => {
@@ -681,7 +708,7 @@
           const list = state.root.querySelector(`[data-bbpk-list='${status}']`);
           const count = state.root.querySelector(`[data-bbpk-count='${status}']`);
           const cards = [...state.cards.values()]
-            .filter((card) => !card.hidden && card.status === status)
+            .filter((card) => !card.hidden && card.native && card.projectLinked && card.project && card.status === status && findNativeChatControl(card))
             .sort((a, b) => b.updatedAt - a.updatedAt);
           list.replaceChildren();
           for (const card of cards) list.append(renderCard(card));
@@ -816,10 +843,20 @@
         document.querySelectorAll(`[${LAUNCHER_ROW_ATTRIBUTE}]`).forEach((row) => {
           if (row !== state.launcherRow) row.remove();
         });
-        if (state.launcher?.isConnected) return true;
-        const anchor = findNewChatControl();
+        const projectNavigation = findProjectNavigation();
+        const anchor = findNewChatControl(projectNavigation);
         const anchorRow = anchor?.closest(".sidebar-item") || anchor?.parentElement;
-        if (!anchorRow?.parentElement || !document.body.contains(anchorRow)) return false;
+        if (!projectNavigation || !anchorRow?.parentElement || !document.body.contains(anchorRow)) {
+          closeBoard({ restoreFocus: false });
+          state.launcherRow?.remove();
+          state.launcher = null;
+          state.launcherRow = null;
+          return false;
+        }
+        if (state.launcher?.isConnected && state.launcherRow?.isConnected) {
+          if (state.launcherRow.previousElementSibling !== anchorRow) anchorRow.insertAdjacentElement("afterend", state.launcherRow);
+          return true;
+        }
         const launcherRow = anchorRow.cloneNode(true);
         launcherRow.setAttribute(LAUNCHER_ROW_ATTRIBUTE, "");
         launcherRow.querySelectorAll(`[${LAUNCHER_ATTRIBUTE}]`).forEach((node) => node.remove());
@@ -888,7 +925,7 @@
           "data-app-action-sidebar-thread-active", "data-app-action-sidebar-thread-selected",
           "data-app-action-sidebar-thread-title", "data-app-action-sidebar-project-label",
           "data-task-change-summary", "data-diff-summary", "data-files-changed", "data-additions", "data-deletions",
-          "data-relative-time", "data-updated-at", "datetime", "aria-expanded"
+          "data-relative-time", "data-updated-at", "datetime", "aria-expanded", "disabled", "aria-disabled"
         ]
       });
       syncAll();

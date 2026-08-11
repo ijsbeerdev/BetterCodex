@@ -6,7 +6,7 @@ import { JSDOM } from "jsdom";
 const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-function setup() {
+function setup(options = {}) {
   const dom = new JSDOM("<!doctype html><html class='electron-dark'><body><div id='app-titlebar'><div aria-label='Application menu'></div></div><div id='toolbar'><button class='native-help size-8' aria-label='Open help menu'></button></div></body></html>", {
     url: "https://codex.local/",
     runScripts: "dangerously",
@@ -18,10 +18,12 @@ function setup() {
   dom.window.matchMedia = () => ({ matches: false });
   dom.window.requestAnimationFrame = (callback) => { callback(); return 1; };
   dom.window.eval(clientSource);
+  options.prepare?.(dom);
   const payload = {
     version: "1.0.0",
     repository: "https://github.com/ijsbeerdev/bettercodex",
     addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
+    preferences: options.preferences,
     addons: [{
       manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", category: "addon", tags: ["Productivity", "Projects"], enabledByDefault: true },
       screenshot: "data:image/svg+xml;base64,PHN2Zy8+",
@@ -46,6 +48,7 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   const host = document.getElementById("bettercodex-client-root");
   const shadow = host.shadowRoot;
   const launcher = document.getElementById("bettercodex-native-launcher");
+  const launcherStyle = document.getElementById("bettercodex-native-launcher-style");
   const help = document.querySelector("[aria-label='Open help menu']");
   assert.equal(host.style.top, "36px");
   assert.equal(launcher.nextElementSibling, help);
@@ -55,6 +58,9 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.equal(launcher.querySelector("[data-bettercodex-icon]").getAttribute("viewBox"), "0 0 16 16");
   assert.equal(launcher.querySelectorAll("[data-bettercodex-icon] path").length, 1);
   assert.equal(launcher.querySelector("[data-bettercodex-icon]").style.color, "rgb(255, 255, 255)");
+  assert.match(launcherStyle.textContent, /rgba\(59,130,246,\.45\)/);
+  assert.match(launcherStyle.textContent, /prefers-reduced-motion:reduce/);
+  assert.match(launcherStyle.textContent, /:focus-visible/);
   assert.equal(host.style.display, "none");
   launcher.click();
   assert.equal(host.style.display, "block");
@@ -100,6 +106,7 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   shadow.querySelector(".back").click();
   assert.equal(host.style.display, "none");
   dom.window.BetterCodex.destroy();
+  assert.equal(document.getElementById("bettercodex-native-launcher-style"), null);
 });
 
 test("searches and filters catalog cards by state and tags", () => {
@@ -175,6 +182,35 @@ test("enables, disables, persists, and cleans up add-ons", () => {
   input.dispatchEvent(new dom.window.Event("change"));
   assert.equal(dom.window.document.body.dataset.addon, undefined);
   assert.equal(JSON.parse(dom.window.localStorage.getItem("bettercodex:addons:v1"))["test-addon"], false);
+  dom.window.BetterCodex.destroy();
+});
+
+test("restores durable preferences and backs up every BetterCodex storage key", () => {
+  const saved = [];
+  const addonStorage = JSON.stringify({ "test-addon": false, "test-tweak": true, "test-theme": true });
+  const kanbanStorage = JSON.stringify({ version: 2, cards: [] });
+  const { dom } = setup({
+    preferences: {
+      persisted: true,
+      storage: {
+        "bettercodex:addons:v1": addonStorage,
+        "bettercodex.project-kanban.v1": kanbanStorage
+      }
+    },
+    prepare(windowDom) {
+      windowDom.window.localStorage.setItem("bettercodex:addons:v1", JSON.stringify({ "test-addon": true }));
+      windowDom.window.__BETTERCODEX_SAVE_PREFERENCES__ = (payload) => saved.push(JSON.parse(payload));
+    }
+  });
+  assert.equal(dom.window.document.body.dataset.addon, undefined);
+  assert.equal(dom.window.document.body.dataset.theme, "on");
+  assert.equal(dom.window.localStorage.getItem("bettercodex.project-kanban.v1"), kanbanStorage);
+
+  const toggle = dom.window.document.getElementById("bettercodex-client-root").shadowRoot.querySelector("input[data-addon='test-addon']");
+  toggle.checked = true;
+  toggle.dispatchEvent(new dom.window.Event("change"));
+  assert.equal(JSON.parse(saved.at(-1).storage["bettercodex:addons:v1"])["test-addon"], true);
+  assert.equal(saved.at(-1).storage["bettercodex.project-kanban.v1"], kanbanStorage);
   dom.window.BetterCodex.destroy();
 });
 
@@ -261,6 +297,7 @@ test("reinjection is idempotent", () => {
   dom.window.__BETTERCODEX_INJECT__(payload);
   assert.equal(dom.window.document.querySelectorAll("#bettercodex-client-root").length, 1);
   assert.equal(dom.window.document.querySelectorAll("#bettercodex-native-launcher").length, 1);
+  assert.equal(dom.window.document.querySelectorAll("#bettercodex-native-launcher-style").length, 1);
   dom.window.BetterCodex.destroy();
 });
 

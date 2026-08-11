@@ -1,5 +1,15 @@
 import { watch } from "node:fs";
 
+export async function reloadRenderers(sessions, expression, replace) {
+  const results = await Promise.allSettled(
+    [...sessions].map((session) => replace(session, expression))
+  );
+  return {
+    reloaded: results.filter(({ status }) => status === "fulfilled").length,
+    errors: results.filter(({ status }) => status === "rejected").map(({ reason }) => reason)
+  };
+}
+
 export function watchAddons(addonsRoot, onChange, options = {}) {
   const debounceMs = options.debounceMs ?? 180;
   const watchImpl = options.watchImpl ?? watch;

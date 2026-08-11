@@ -29,10 +29,19 @@ test("renders a native task Kanban, tracks activity and change totals, completes
             <span>Update README</span><span role="status">Complete</span>
           </div>
         </div>
+        <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:ghost" data-app-action-sidebar-thread-title="Unlinked ChatGPT conversation"><span>Unlinked ChatGPT conversation</span></div>
         <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:render" data-app-action-sidebar-thread-title="Render graph" data-project-name="ComfyUI"><span>Render graph</span></div>
       </nav>
     </aside>
-    <main class="native-main-surface"><div data-native-content>Native task<div>src/auth.js +1,400 -900</div><div>tests/auth.test.js +64 -16</div></div></main>
+    <main class="native-main-surface">
+      <div data-native-content>Native task<div>src/auth.js +1,400 -900</div><div>tests/auth.test.js +64 -16</div></div>
+      <section data-thread-summary>
+        <button data-slot="thread-summary-panel-item-button"><span data-slot="thread-summary-panel-item-label">Changes</span></button>
+        <button title="Switch branch" data-slot="thread-summary-panel-item-button"><span data-slot="thread-summary-panel-item-label">main</span></button>
+        <button data-commit-or-push data-slot="thread-summary-panel-item-button"><span data-slot="thread-summary-panel-item-label">Commit or push</span></button>
+        <span data-slot="thread-summary-panel-item-label">Local</span>
+      </section>
+    </main>
   </body></html>`, {
     url: "https://codex.local/tasks/current",
     runScripts: "dangerously",
@@ -45,10 +54,10 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.equal(registration.id, "project-kanban");
   t.after(() => registration?.stop());
   dom.window.localStorage.setItem("bettercodex.project-kanban.v1", JSON.stringify({
-    version: 2,
+    version: 3,
     cards: [
       { id: "plan-old", title: "Original plan title", project: "bettercodex", status: "in-progress", progress: "Running", href: "thread:local:old", native: true, updatedAt: 1 },
-      { id: "chat:thread:missing", title: "No longer running", project: "bettercodex", status: "in-progress", progress: "Running", href: "thread:missing", native: true, updatedAt: 1 }
+      { id: "chat:thread:missing", title: "No longer running", project: "bettercodex", status: "in-progress", progress: "Running", href: "thread:missing", native: true, projectLinked: true, updatedAt: 1 }
     ]
   }));
 
@@ -89,6 +98,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.match(runningCard.textContent, /Build authentication/);
   assert.match(runningCard.textContent, /bettercodex/);
   assert.match(root.textContent, /ComfyUI/);
+  assert.doesNotMatch(root.textContent, /Unlinked ChatGPT conversation/);
   assert.doesNotMatch(root.textContent, /Current project/);
   assert.match(runningCard.textContent, /2m/);
   assert.match(runningCard.textContent, /2 files/);
@@ -120,18 +130,36 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.match(root.querySelector("[data-bbpk-list='waiting']").textContent, /Review access policy/);
   assert.doesNotMatch(root.querySelector("[data-bbpk-list='in-progress']").textContent, /No longer running/);
   assert.match(root.querySelector("[data-bbpk-list='done']").textContent, /Update README/);
-  assert.match(root.querySelector("[data-bbpk-list='done']").textContent, /Explain gateway logic/);
-  assert.match(root.querySelector("[data-bbpk-list='done']").textContent, /No longer running/);
-  assert.equal(root.querySelectorAll("button[data-card-id='plan-old']").length, 1);
+  assert.match(root.querySelector("[data-bbpk-list='old']").textContent, /Explain gateway logic/);
+  assert.doesNotMatch(root.querySelector("[data-bbpk-list='done']").textContent, /No longer running/);
+  assert.equal(root.querySelectorAll("button[data-card-id='plan-old']").length, 0);
+  const savedCards = JSON.parse(dom.window.localStorage.getItem("bettercodex.project-kanban.v1"));
+  assert.equal(savedCards.version, 3);
+  assert.equal(savedCards.cards.some((card) => /ghost|missing|plan-old/i.test(`${card.id} ${card.title}`)), false);
 
   const nativeChat = dom.window.document.querySelector("[data-app-action-sidebar-thread-id='local:auth']");
   nativeChat.querySelector("[role='status']").remove();
-  nativeChat.setAttribute("data-app-action-sidebar-thread-active", "false");
   await delay(10);
   assert.doesNotMatch(root.querySelector("[data-bbpk-list='in-progress']").textContent, /Build authentication/);
+  const waitingToPush = root.querySelector("[data-bbpk-list='waiting'] button[data-card-id='chat:thread:local:auth']");
+  assert.ok(waitingToPush);
+  assert.match(waitingToPush.textContent, /Build authentication/);
+
+  nativeChat.setAttribute("data-app-action-sidebar-thread-active", "false");
+  const completedStatus = dom.window.document.createElement("span");
+  completedStatus.setAttribute("role", "status");
+  completedStatus.textContent = "Complete";
+  nativeChat.append(completedStatus);
+  await delay(10);
+  assert.match(root.querySelector("[data-bbpk-list='waiting']").textContent, /Build authentication/);
+
+  nativeChat.setAttribute("data-app-action-sidebar-thread-active", "true");
+  dom.window.document.querySelector("[data-commit-or-push]").remove();
+  await delay(10);
   const completedCard = root.querySelector("[data-bbpk-list='done'] button[data-card-id='chat:thread:local:auth']");
   assert.ok(completedCard);
   assert.equal(completedCard.querySelector(".bbpk-spinner"), null);
+  nativeChat.setAttribute("data-app-action-sidebar-thread-active", "false");
 
   nativeChat.setAttribute("data-app-action-sidebar-thread-title", "Authentication shipped");
   await delay(10);
@@ -156,4 +184,45 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher-row]"), null);
   assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-root]"), null);
   assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-style]"), null);
+});
+
+test("hides Kanban in ChatGPT mode and ignores chats without explicit project linkage", async (t) => {
+  const source = await readFile(new URL("../addons/project-kanban/index.js", import.meta.url), "utf8");
+  const dom = new JSDOM(`<!doctype html><html><head></head><body>
+    <aside><nav aria-label="Projects">
+      <div class="sidebar-item"><button type="button"><span>New chat</span></button></div>
+      <div class="sidebar-item" data-app-action-sidebar-project-row data-app-action-sidebar-project-id="project-1" data-app-action-sidebar-project-label="bettercodex">bettercodex</div>
+      <div data-app-action-sidebar-project-list-id="project-1">
+        <div class="sidebar-item" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:project" data-app-action-sidebar-thread-title="Project task"><span>Project task</span><button aria-label="More options for Project task"></button></div>
+      </div>
+    </nav></aside>
+    <main class="native-main-surface">Codex</main>
+  </body></html>`, {
+    url: "https://codex.local/tasks/current",
+    runScripts: "dangerously",
+    pretendToBeVisual: true
+  });
+
+  let registration;
+  dom.window.BetterCodex = { register(value) { registration = value; } };
+  dom.window.eval(source);
+  t.after(() => registration?.stop());
+  registration.start();
+  await delay(10);
+
+  const nav = dom.window.document.querySelector("nav");
+  const codexNewChatRow = [...nav.querySelectorAll(".sidebar-item")].find((row) => /new chat/i.test(row.textContent));
+  assert.equal(codexNewChatRow.nextElementSibling?.hasAttribute("data-bettercodex-project-kanban-launcher-row"), true);
+
+  nav.innerHTML = `
+    <div class="sidebar-item"><button type="button">Unlinked recent chat</button></div>
+    <div class="sidebar-item" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:ghost" data-app-action-sidebar-thread-title="Unlinked recent chat"><span>Unlinked recent chat</span></div>
+    <div class="sidebar-item"><button type="button">New chat</button></div>
+    <div class="sidebar-item"><button type="button">Projects</button></div>
+  `;
+  await delay(10);
+
+  assert.equal(dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher]"), null);
+  const stored = JSON.parse(dom.window.localStorage.getItem("bettercodex.project-kanban.v1") || "{}");
+  assert.equal((stored.cards || []).some((card) => card.href === "thread:local:ghost"), false);
 });

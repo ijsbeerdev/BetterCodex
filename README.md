@@ -19,10 +19,11 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 - **Launch Codex normally** — the per-user watcher handles injection from your existing Start menu or taskbar shortcut.
 - **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
 - **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
+- **Durable preferences** — add-on, tweak, theme, and feature state is backed up in the Windows user profile and survives patching or uninstalling BetterCodex.
 - **Update checks** — check the latest GitHub release from BetterCodex settings and jump straight to it when an update is available.
-- **Instant development** — edit the client or an add-on and Hot Reload reinjects the change without restarting Codex.
+- **Instant development** — core hot reload watches the client and add-on files, then reinjects changes without restarting Codex.
 - **Built-in add-on generation** — start a focused Codex task with the exact scaffold, lifecycle, and installation requirements already attached.
-- **Clean removal** — uninstalling removes the watcher, shortcuts, and BetterCodex runtime while leaving Codex alone.
+- **Clean removal** — uninstalling removes the watcher, shortcuts, and BetterCodex runtime while leaving Codex and your saved BetterCodex preferences alone.
 
 ## 🧩 Included add-ons, tweaks, and themes
 
@@ -32,9 +33,8 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 | Theme | **CLI** | Turns Codex into a phosphor terminal with monospace type, scanlines, and command-line color. |
 | Tweak | **Approval Shelf** | Keeps Codex's real composer and draft visible beneath approval prompts. |
 | Tweak | **Auto Expand Activity** | Automatically opens collapsed command and file-edit activity in conversations. |
-| Tweak | **Hot Reload** | Watches the client and add-on files, then refreshes every active renderer as you build. |
 
-Included add-ons and tweaks are enabled by default. Themes are opt-in, and every feature can be toggled independently from **BetterCodex settings**.
+Included add-ons and tweaks are enabled by default. Themes are opt-in, and every add-on feature can be toggled independently from **BetterCodex settings**. Hot reload is part of the core runtime so it is always ready after patching.
 
 <table>
   <tr>
@@ -43,10 +43,7 @@ Included add-ons and tweaks are enabled by default. Themes are opt-in, and every
   </tr>
   <tr>
     <td width="50%"><img src="addons/auto-expand-activity/screenshot.svg" alt="Auto Expand Activity add-on preview"><br><strong>Auto Expand Activity</strong></td>
-    <td width="50%"><img src="addons/hot-reload/screenshot.svg" alt="Hot Reload add-on preview"><br><strong>Hot Reload</strong></td>
-  </tr>
-  <tr>
-    <td colspan="2"><img src="addons/cli-theme/screenshot.svg" alt="CLI theme preview" width="50%"><br><strong>CLI</strong></td>
+    <td width="50%"><img src="addons/cli-theme/screenshot.svg" alt="CLI theme preview"><br><strong>CLI</strong></td>
   </tr>
 </table>
 
@@ -56,7 +53,7 @@ Included add-ons and tweaks are enabled by default. Themes are opt-in, and every
 2. Download the Windows x64 ZIP attached to that release.
 3. Extract the **entire** ZIP.
 4. Double-click **Install BetterCodex.cmd**.
-5. Quit ChatGPT Codex completely, then launch it normally.
+5. If Codex is open, let it briefly restart while BetterCodex loads. Future launches load automatically.
 
 The release includes its own verified portable runtime, so users do not need Node.js or npm. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached. A separate **BetterCodex for ChatGPT Codex** shortcut is also installed as a fallback.
 
@@ -118,6 +115,8 @@ The launcher resolves the newest installed Codex version every time, which lets 
 Release packages include **Uninstall BetterCodex.cmd**. Run it to stop and remove the watcher, runtime, and BetterCodex shortcuts. For a source install, run `npm run unpatch`.
 
 The official ChatGPT Codex installation is never removed or modified.
+
+BetterCodex stores its durable preference backup at `%APPDATA%\BetterCodex\preferences.json`. Patching and uninstalling preserve this small profile file so a later reinstall restores add-on, tweak, theme, and feature state.
 
 ## 🤝 Contributing
 

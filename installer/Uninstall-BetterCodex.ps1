@@ -42,3 +42,4 @@ if ((Test-Path -LiteralPath $installRoot) -and $PSCmdlet.ShouldProcess($installR
 
 Write-Host ""
 Write-Host "BetterCodex is uninstalled. The official ChatGPT Codex app was not changed." -ForegroundColor Green
+Write-Host "Your BetterCodex preferences remain saved in the Windows user profile for a future reinstall."

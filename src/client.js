@@ -1,7 +1,10 @@
 (() => {
   const ROOT_ID = "bettercodex-client-root";
   const LAUNCHER_ID = "bettercodex-native-launcher";
+  const LAUNCHER_STYLE_ID = "bettercodex-native-launcher-style";
   const STORAGE_KEY = "bettercodex:addons:v1";
+  const PREFERENCES_BINDING = "__BETTERCODEX_SAVE_PREFERENCES__";
+  const STORAGE_KEY_PATTERN = /^bettercodex(?:[.:_-]|$)/i;
   const BETTERCODEX_ICON = `<svg data-bettercodex-icon aria-hidden="true" class="icon-sm" width="20" height="20" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.48 4h4l.5.5v2.03h.52l.5.5V8l-.5.5h-.52v3l-.5.5H9.36l-2.5 2.76L6 14.4V12H3.5l-.5-.64V8.5h-.5L2 8v-.97l.5-.5H3V4.36L3.53 4h4V2.86A1 1 0 0 1 7 2a1 1 0 0 1 2 0 1 1 0 0 1-.52.83V4zM12 8V5H4v5.86l2.5.14H7v2.19l1.8-2.04.35-.15H12V8zm-2.12.51a2.71 2.71 0 0 1-1.37.74v-.01a2.71 2.71 0 0 1-2.42-.74l-.7.71c.34.34.745.608 1.19.79.45.188.932.286 1.42.29a3.7 3.7 0 0 0 2.58-1.07l-.7-.71zM6.49 6.5h-1v1h1v-1zm3 0h1v1h-1v-1z"></path></svg>`;
   const REFRESH_ICON = `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 4.53-.761l.302-.954A6 6 0 1 1 4.681 3z"></path></svg>`;
   const BACK_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.8011 3.611C9.05912 3.44087 9.40989 3.46898 9.63703 3.69596C9.89673 3.95566 9.89673 4.37767 9.63703 4.63737L4.93977 9.33463H16.6663L16.8011 9.34831C17.1038 9.41043 17.3312 9.67859 17.3314 9.99967C17.3314 10.3209 17.1039 10.5888 16.8011 10.651L16.6663 10.6647H4.93879L9.63703 15.363L9.722 15.4674C9.89241 15.7255 9.86413 16.0761 9.63703 16.3034C9.40981 16.5306 9.05921 16.5587 8.8011 16.3883L8.69661 16.3034L2.86262 10.4704C2.60319 10.2108 2.6033 9.78962 2.86262 9.52995L8.69661 3.69596L8.8011 3.611Z" fill="currentColor"></path></svg>`;
@@ -15,6 +18,7 @@
     globalThis.BetterCodex?.destroy?.();
     document.getElementById(ROOT_ID)?.remove();
     document.getElementById(LAUNCHER_ID)?.remove();
+    document.getElementById(LAUNCHER_STYLE_ID)?.remove();
 
     const catalog = new Map(payload.addons.map((addon) => [addon.manifest.id, addon]));
     const implementations = new Map();
@@ -22,11 +26,49 @@
     const controller = new AbortController();
     let launcher;
     let previousOverflow = "";
+    const durableStorage = payload.preferences?.persisted && payload.preferences.storage && typeof payload.preferences.storage === "object"
+      ? payload.preferences.storage
+      : {};
+    for (const [key, value] of Object.entries(durableStorage)) {
+      if (STORAGE_KEY_PATTERN.test(key) && typeof value === "string") localStorage.setItem(key, value);
+    }
+    const snapshotStorage = () => {
+      const storage = {};
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && STORAGE_KEY_PATTERN.test(key)) storage[key] = localStorage.getItem(key);
+      }
+      return storage;
+    };
+    const persistStorage = () => {
+      const binding = globalThis[PREFERENCES_BINDING];
+      if (typeof binding === "function") binding(JSON.stringify({ version: 1, storage: snapshotStorage() }));
+    };
+    const preferenceStorage = {
+      getItem(key) {
+        if (!STORAGE_KEY_PATTERN.test(String(key))) return null;
+        return localStorage.getItem(key);
+      },
+      setItem(key, value) {
+        if (!STORAGE_KEY_PATTERN.test(String(key))) throw new Error("BetterCodex preference keys must start with bettercodex");
+        localStorage.setItem(key, String(value));
+        persistStorage();
+      },
+      removeItem(key) {
+        if (!STORAGE_KEY_PATTERN.test(String(key))) return;
+        localStorage.removeItem(key);
+        persistStorage();
+      }
+    };
     let stored = {};
-    try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch {}
+    try { stored = JSON.parse(preferenceStorage.getItem(STORAGE_KEY) || "{}"); } catch {}
 
     const isEnabled = (id) => stored[id] ?? Boolean(catalog.get(id)?.manifest.enabledByDefault);
-    const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    const save = () => preferenceStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    const restoredStorage = snapshotStorage();
+    if (!payload.preferences?.persisted || JSON.stringify(restoredStorage) !== JSON.stringify(durableStorage)) {
+      queueMicrotask(persistStorage);
+    }
 
     const start = (id) => {
       if (active.has(id)) return;
@@ -48,6 +90,54 @@
       catch (error) { console.error(`[BetterCodex] Could not stop ${id}`, error); }
       active.delete(id);
     };
+
+    const launcherStyle = document.createElement("style");
+    launcherStyle.id = LAUNCHER_STYLE_ID;
+    launcherStyle.textContent = `
+      #${LAUNCHER_ID} {
+        position:relative;
+        isolation:isolate;
+        overflow:hidden;
+        transition:color 180ms ease,background 180ms ease,box-shadow 220ms ease,transform 180ms ease;
+      }
+      #${LAUNCHER_ID}::after {
+        content:"";
+        position:absolute;
+        inset:1px;
+        border-radius:inherit;
+        pointer-events:none;
+        opacity:0;
+        background:linear-gradient(110deg,transparent 16%,rgba(186,230,253,.5) 48%,transparent 80%);
+        transform:translateX(-75%);
+        transition:transform 480ms ease,opacity 180ms ease;
+      }
+      #${LAUNCHER_ID} [data-bettercodex-icon] {
+        position:relative;
+        z-index:1;
+        transition:color 180ms ease,filter 220ms ease,transform 220ms cubic-bezier(.2,.8,.2,1);
+      }
+      #${LAUNCHER_ID}:is(:hover,:focus-visible) {
+        color:#7dd3fc !important;
+        background:linear-gradient(135deg,rgba(14,165,233,.2),rgba(37,99,235,.24)) !important;
+        box-shadow:0 0 0 1px rgba(96,165,250,.5),0 0 18px rgba(59,130,246,.45),inset 0 0 12px rgba(56,189,248,.12);
+      }
+      #${LAUNCHER_ID}:is(:hover,:focus-visible)::after {
+        opacity:1;
+        transform:translateX(75%);
+      }
+      #${LAUNCHER_ID}:is(:hover,:focus-visible) [data-bettercodex-icon] {
+        color:#7dd3fc !important;
+        filter:drop-shadow(0 0 5px rgba(56,189,248,.95));
+        transform:scale(1.1) rotate(-4deg);
+      }
+      #${LAUNCHER_ID}:active { transform:translateY(0) scale(.96); }
+      @media (prefers-reduced-motion:reduce) {
+        #${LAUNCHER_ID},#${LAUNCHER_ID}::after,#${LAUNCHER_ID} [data-bettercodex-icon] { transition:none; }
+        #${LAUNCHER_ID}:is(:hover,:focus-visible) { transform:none; }
+        #${LAUNCHER_ID}::after { display:none; }
+      }
+    `;
+    (document.head || document.documentElement).append(launcherStyle);
 
     const host = document.createElement("div");
     host.id = ROOT_ID;
@@ -422,7 +512,7 @@
         `## ${kind.section} contract and structure\n\n` +
         `This entry belongs in BetterCodex ${kind.section}; set manifest category to \"${category}\" exactly. An add-on is a distinct feature or workflow, a tweak is one focused improvement to existing behavior, and a theme is an app-wide visual treatment that does not replace product behavior. Inspect the current sibling entries in this category first, then read every file and focused test for the closest similar entry. Follow those current conventions. Create exactly one <kebab-case-id> directory directly under the target add-ons directory. It must contain manifest.json, index.js, and screenshot.svg. Do not add dependencies or a build step unless the requested feature cannot reasonably work without them. Keep the entry self-contained.\n\n` +
         `manifest.json must contain id, name, version, description, category, tags, screenshot, and enabledByDefault. Category must remain \"${category}\". Add 1 to 3 short, useful tags that match terminology used by related BetterCodex entries and help people search and filter the catalog. The id must exactly match the directory name and the id passed to BetterCodex.register. Start at version 0.1.0. Set screenshot to screenshot.svg. Write short, friendly copy suitable for the BetterCodex ${kind.section} page. Themes are opt-in and must set enabledByDefault to false unless the user explicitly requires otherwise; tweaks and add-ons should use the safest sensible first-run state.\n\n` +
-        `index.js runs as classic browser JavaScript inside the Codex renderer. It has no imports, require(), module system, package dependencies, or Node.js APIs. Register it with BetterCodex.register({ id, start, stop }). start() must be idempotent even if BetterCodex hot-reloads it repeatedly. stop() must fully reverse the add-on: disconnect MutationObservers, clear timers, remove event listeners and injected DOM/style nodes, and restore every native node or attribute it changed. Keep state private to the add-on and use stable data attributes for anything injected.\n\n` +
+        `index.js runs as classic browser JavaScript inside the Codex renderer. It has no imports, require(), module system, package dependencies, or Node.js APIs. Register it with BetterCodex.register({ id, start, stop }). start() must be idempotent even if BetterCodex hot-reloads it repeatedly. stop() must fully reverse the add-on: disconnect MutationObservers, clear timers, remove event listeners and injected DOM/style nodes, and restore every native node or attribute it changed. Keep state private to the add-on and use stable data attributes for anything injected. Store persistent add-on preferences with BetterCodex.storage using a key that begins with bettercodex so they survive Codex updates and BetterCodex reinstallations.\n\n` +
         `Treat Codex's DOM as private and updateable. Prefer semantic attributes, accessible labels, and narrow structural checks over generated class names. Observe the smallest practical root, debounce or batch repeated scans, avoid polling when a MutationObserver works, and fail quietly if the expected UI is absent. Preserve native keyboard, focus, scrolling, approval, composer, and navigation behavior. Reuse Codex's visual language and CSS variables where available; support both light and dark themes.\n\n` +
         `Treat Codex's existing UI as the component library. Before creating a button, menu, input, dialog, panel, row, badge, tooltip, or navigation item, inspect the nearby native equivalent and reuse the native element or existing surface when feasible. Prefer inserting into a native container, exposing an existing control, or adapting the same semantic structure over building a parallel custom component. Do not introduce a component framework, custom design system, custom modal shell, or web-component layer. When a new control is essential, match the neighboring native component's element type, accessible name, icon sizing, focus behavior, disabled state, hover and pressed states, spacing, and theme variables. A theme must style native Codex and BetterCodex components in place; a tweak should usually alter a native behavior or component; an add-on may compose native components into a larger workflow only when the requested feature needs it.\n\n` +
         `screenshot.svg must be a polished 640x280 preview of the feature as its card header. It should be valid standalone SVG, legible in BetterCodex's dark settings UI, and contain no external assets, scripts, or remote fonts.\n\n` +
@@ -517,6 +607,7 @@
         return active.has(id);
       },
       isEnabled,
+      storage: preferenceStorage,
       open,
       close,
       destroy() {
@@ -524,6 +615,7 @@
         for (const id of [...active]) stop(id);
         if (document.body) document.body.style.overflow = previousOverflow;
         launcher?.remove();
+        launcherStyle.remove();
         host.remove();
         if (globalThis.BetterCodex === api) delete globalThis.BetterCodex;
       }

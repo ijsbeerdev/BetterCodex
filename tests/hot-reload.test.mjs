@@ -4,15 +4,15 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 import { loadAddons } from "../src/catalog.mjs";
-import { replaceInjection } from "../src/cdp.mjs";
-import { watchAddons } from "../src/hot-reload.mjs";
+import { replaceInjection, updatePersistentInjection } from "../src/cdp.mjs";
+import { reloadRenderers, watchAddons } from "../src/hot-reload.mjs";
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-test("bundled add-ons load and Hot Reload cleans up when disabled", async () => {
+test("bundled add-ons load without a hot-reload toggle", async () => {
   const addonsRoot = fileURLToPath(new URL("../addons", import.meta.url));
   const addons = await loadAddons(addonsRoot);
-  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cli-theme", "hot-reload", "project-kanban", "thinking-mode-colors"]);
+  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cli-theme", "project-kanban", "thinking-mode-colors"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
   const dom = new JSDOM("<!doctype html><body><button aria-label='Open help menu'></button></body>", {
@@ -28,12 +28,18 @@ test("bundled add-ons load and Hot Reload cleans up when disabled", async () => 
   dom.window.eval(clientSource);
   dom.window.__BETTERCODEX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
   await delay(25);
-  assert.equal(dom.window.__BETTERCODEX_HOT_RELOAD_ACTIVE__, true);
-  assert.ok(dom.window.document.getElementById("bettercodex-native-launcher"));
-  dom.window.BetterCodex.setEnabled("hot-reload", false);
-  assert.equal(dom.window.__BETTERCODEX_HOT_RELOAD_ACTIVE__, undefined);
   assert.ok(dom.window.document.getElementById("bettercodex-native-launcher"));
   dom.window.BetterCodex.destroy();
+});
+
+test("core hot reload refreshes every renderer without an add-on gate", async () => {
+  const sessions = [{ id: "one" }, { id: "two" }];
+  const calls = [];
+  const result = await reloadRenderers(sessions, "new expression", async (session, expression) => {
+    calls.push({ session, expression });
+  });
+  assert.deepEqual(calls, sessions.map((session) => ({ session, expression: "new expression" })));
+  assert.deepEqual(result, { reloaded: 2, errors: [] });
 });
 
 test("add-on file events are debounced", async () => {
@@ -89,4 +95,22 @@ test("replaces the persistent injection script after evaluating the update", asy
     "Page.removeScriptToEvaluateOnNewDocument"
   ]);
   assert.equal(calls[2].params.identifier, "old-script");
+});
+
+test("updates future-navigation injection without reloading the active renderer", async () => {
+  const calls = [];
+  const connection = {
+    bettercodexScriptIdentifier: "old-script",
+    async send(method, params) {
+      calls.push({ method, params });
+      if (method === "Page.addScriptToEvaluateOnNewDocument") return { identifier: "new-script" };
+      return {};
+    }
+  };
+  await updatePersistentInjection(connection, "new expression");
+  assert.equal(connection.bettercodexScriptIdentifier, "new-script");
+  assert.deepEqual(calls.map(({ method }) => method), [
+    "Page.addScriptToEvaluateOnNewDocument",
+    "Page.removeScriptToEvaluateOnNewDocument"
+  ]);
 });

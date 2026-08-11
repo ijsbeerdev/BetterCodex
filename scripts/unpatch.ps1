@@ -35,4 +35,4 @@ if ((Test-Path -LiteralPath $installRoot) -and $PSCmdlet.ShouldProcess($installR
     Remove-Item -LiteralPath $installRoot -Recurse -Force
 }
 
-Write-Host "BetterCodex is unpatched. The official ChatGPT Codex installation was not changed."
+Write-Host "BetterCodex is unpatched. Your preferences remain saved in the Windows user profile for a future reinstall."

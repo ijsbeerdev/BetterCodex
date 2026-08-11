@@ -1,15 +1,23 @@
 import { execFileSync, spawn } from "node:child_process";
-import { access, appendFile, readFile } from "node:fs/promises";
+import { access, appendFile, readFile, unlink } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { injectTarget, replaceInjection } from "./cdp.mjs";
+import { injectTarget, replaceInjection, updatePersistentInjection } from "./cdp.mjs";
 import { loadAddons } from "./catalog.mjs";
-import { watchAddons } from "./hot-reload.mjs";
+import { reloadRenderers, watchAddons } from "./hot-reload.mjs";
+import { createPreferencesStore, installPreferencesBridge } from "./preferences.mjs";
 import { installUpdateBridge } from "./updates.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
 const port = Number(process.env.BETTERCODEX_DEBUG_PORT || 11983);
+const profileRoot = process.env.APPDATA || join(homedir(), "AppData", "Roaming");
+const preferencesStore = createPreferencesStore(join(profileRoot, "BetterCodex", "preferences.json"));
+const notificationScript = join(runtimeRoot, "notify.ps1");
+const patchNotificationMarker = join(runtimeRoot, "patch-notification-pending");
+let patchNotificationPending = false;
+try { await access(patchNotificationMarker); patchNotificationPending = true; } catch {}
 
 async function resolveAddonsRoot() {
   const developmentRoot = packageInfo.developmentAddonsPath;
@@ -34,7 +42,8 @@ const clientPath = await resolveClientPath();
 async function createExpression() {
   const clientSource = await readFile(clientPath, "utf8");
   const addons = await loadAddons(addonsRoot);
-  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons };
+  const preferences = await preferencesStore.load();
+  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons, preferences };
   return `${clientSource}\n;globalThis.__BETTERCODEX_INJECT__(${JSON.stringify(payload)});`;
 }
 
@@ -69,6 +78,14 @@ function showMessage(message, title = "BetterCodex") {
     stdio: "ignore",
     windowsHide: true
   });
+  notification.unref();
+}
+
+function showNotification(title, message) {
+  const notification = spawn("powershell.exe", [
+    "-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass",
+    "-File", notificationScript, "-Title", title, "-Message", message
+  ], { detached: true, stdio: "ignore", windowsHide: true });
   notification.unref();
 }
 
@@ -111,23 +128,27 @@ async function main() {
 
   const sessions = new Map();
   let reloadQueue = Promise.resolve();
+  let preferencesQueue = Promise.resolve();
   let addonWatcher;
   let clientWatcher;
+  const queuePreferencesRefresh = () => {
+    preferencesQueue = preferencesQueue.then(async () => {
+      const nextExpression = await createExpression();
+      currentExpression = nextExpression;
+      const results = await Promise.allSettled(
+        [...sessions.values()].map((session) => updatePersistentInjection(session, nextExpression))
+      );
+      const failures = results.filter(({ status }) => status === "rejected");
+      await log(`Saved preferences to ${preferencesStore.path}; refreshed ${results.length - failures.length} persistent renderer script(s), ${failures.length} failed.`);
+    }).catch((error) => log(`Could not refresh saved preferences: ${error.message}`));
+  };
   const queueReload = ({ eventType, filename }) => {
     reloadQueue = reloadQueue.then(async () => {
       const nextExpression = await createExpression();
-      let reloaded = 0;
-      for (const session of sessions.values()) {
-        const state = await session.send("Runtime.evaluate", {
-          expression: "Boolean(globalThis.__BETTERCODEX_HOT_RELOAD_ACTIVE__)",
-          returnByValue: true
-        });
-        if (state.result?.value !== true) continue;
-        await replaceInjection(session, nextExpression);
-        reloaded += 1;
-      }
-      if (reloaded > 0) currentExpression = nextExpression;
-      await log(`Hot reload ${eventType} ${filename}: refreshed ${reloaded} renderer(s).`);
+      currentExpression = nextExpression;
+      const result = await reloadRenderers(sessions.values(), nextExpression, replaceInjection);
+      await log(`Hot reload ${eventType} ${filename}: refreshed ${result.reloaded} renderer(s), ${result.errors.length} failed.`);
+      for (const error of result.errors) await log(`Hot reload renderer failed: ${error.message || error}`);
     }).catch((error) => log(`Hot reload failed: ${error.message}`));
   };
   try {
@@ -146,9 +167,24 @@ async function main() {
         if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
         if (!sessions.has(target.id)) {
           try {
-            sessions.set(target.id, await injectTarget(target, currentExpression, (connection) =>
-              installUpdateBridge(connection, packageInfo.repository.url)));
+            sessions.set(target.id, await injectTarget(target, currentExpression, async (connection) => {
+              await installUpdateBridge(connection, packageInfo.repository.url);
+              await installPreferencesBridge(connection, preferencesStore, {
+                onSaved: queuePreferencesRefresh,
+                onError: (error) => log(`Could not save preferences: ${error.message}`)
+              });
+            }));
             await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
+            if (patchNotificationPending && !target.url?.includes("avatar-overlay")) {
+              try {
+                await unlink(patchNotificationMarker);
+                patchNotificationPending = false;
+                showNotification("BetterCodex patched successfully", "BetterCodex and your enabled add-ons are ready.");
+                await log("Displayed the successful patch notification.");
+              } catch (error) {
+                await log(`Could not display the successful patch notification: ${error.message}`);
+              }
+            }
           } catch (error) {
             await log(`Skipped renderer ${target.id}: ${error.message}`);
           }
@@ -180,6 +216,7 @@ async function main() {
   addonWatcher?.close();
   clientWatcher?.close();
   await reloadQueue;
+  await preferencesQueue;
   for (const session of sessions.values()) session.close();
 }
 
