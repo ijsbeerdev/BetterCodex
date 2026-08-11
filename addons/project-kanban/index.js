@@ -400,7 +400,13 @@
           }
 
           const changes = readChangeSummary(control, active);
-          if (changes) Object.assign(card, changes);
+          if (!running && pushPending === false) {
+            card.filesChanged = 0;
+            card.additions = 0;
+            card.deletions = 0;
+          } else if (changes) {
+            Object.assign(card, changes);
+          }
           const activityTime = readActivityTime(control);
           if (activityTime?.label) card.activityLabel = activityTime.label;
           if (activityTime?.timestamp) card.updatedAt = activityTime.timestamp;
@@ -465,7 +471,7 @@
           [${ROOT_ATTRIBUTE}] .bbpk-card { position:relative; width:100%; margin:0; border:1px solid transparent; border-radius:11px; color:inherit; background:var(--color-token-main-surface-secondary, color-mix(in srgb, currentColor 5%, transparent)); box-shadow:0 1px 2px rgba(0,0,0,.08); }
           [${ROOT_ATTRIBUTE}] .bbpk-card:hover { background:var(--color-token-list-hover-background, color-mix(in srgb, currentColor 8%, transparent)); }
           [${ROOT_ATTRIBUTE}] .bbpk-card-main { appearance:none; display:block; width:100%; margin:0; padding:14px 38px 14px 15px; border:0; border-radius:inherit; color:inherit; background:transparent; font:inherit; text-align:left; cursor:pointer; }
-          [${ROOT_ATTRIBUTE}] .bbpk-card-main:focus-visible, [${ROOT_ATTRIBUTE}] .bbpk-menu-button:focus-visible { outline:2px solid Highlight; outline-offset:2px; }
+          [${ROOT_ATTRIBUTE}] .bbpk-card-main:focus-visible, [${ROOT_ATTRIBUTE}] .bbpk-menu-button:focus-visible, [${ROOT_ATTRIBUTE}] .bbpk-change-action:focus-visible { outline:2px solid Highlight; outline-offset:2px; }
           [${ROOT_ATTRIBUTE}] .bbpk-menu-button { appearance:none; position:absolute; top:7px; right:7px; display:grid; width:27px; height:27px; padding:0; place-items:center; border:0; border-radius:7px; color:var(--color-token-text-secondary, color-mix(in srgb, currentColor 65%, transparent)); background:transparent; cursor:pointer; opacity:0; pointer-events:none; }
           [${ROOT_ATTRIBUTE}] .bbpk-menu-button:hover { color:inherit; background:color-mix(in srgb, currentColor 9%, transparent); }
           [${ROOT_ATTRIBUTE}] .bbpk-card:hover .bbpk-menu-button, [${ROOT_ATTRIBUTE}] .bbpk-card:focus-within .bbpk-menu-button { opacity:1; pointer-events:auto; }
@@ -477,10 +483,20 @@
           [${ROOT_ATTRIBUTE}] .bbpk-meta[data-has-project='false'] { justify-content:flex-end; }
           [${ROOT_ATTRIBUTE}] .bbpk-project { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
           [${ROOT_ATTRIBUTE}] .bbpk-time { flex:none; }
-          [${ROOT_ATTRIBUTE}] .bbpk-changes { display:flex; align-items:center; gap:9px; margin-top:8px; font-size:11px; line-height:1.2; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-footer { display:flex; align-items:center; gap:10px; min-width:0; padding:10px 10px 10px 12px; border-top:1px solid var(--color-token-border-light, color-mix(in srgb, currentColor 10%, transparent)); }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-icon { display:grid; width:25px; height:25px; flex:none; place-items:center; border-radius:7px; color:var(--color-token-text-secondary, color-mix(in srgb, currentColor 65%, transparent)); background:var(--color-token-main-surface-primary, color-mix(in srgb, currentColor 5%, transparent)); }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-icon svg { width:14px; height:14px; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-copy { min-width:0; flex:1; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-title { display:block; overflow:hidden; font-size:11px; font-weight:600; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
+          [${ROOT_ATTRIBUTE}] .bbpk-changes { display:flex; align-items:center; gap:7px; margin-top:3px; font-size:10px; line-height:1.2; }
           [${ROOT_ATTRIBUTE}] .bbpk-files { color:var(--color-token-text-tertiary, color-mix(in srgb, currentColor 50%, transparent)); }
           [${ROOT_ATTRIBUTE}] .bbpk-additions { color:var(--color-token-text-success, #3fb950); }
           [${ROOT_ATTRIBUTE}] .bbpk-deletions { color:var(--color-token-text-danger, #e05262); }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-actions { display:flex; align-items:center; gap:3px; flex:none; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-action { appearance:none; display:flex; min-height:25px; margin:0; padding:0 7px; align-items:center; gap:3px; border:1px solid transparent; border-radius:7px; color:inherit; background:transparent; font:inherit; font-size:10px; line-height:1; cursor:pointer; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-action svg { width:11px; height:11px; flex:none; }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-action:hover { background:var(--color-token-list-hover-background, color-mix(in srgb, currentColor 9%, transparent)); }
+          [${ROOT_ATTRIBUTE}] .bbpk-change-action-review { border-color:var(--color-token-border-medium, color-mix(in srgb, currentColor 15%, transparent)); background:var(--color-token-main-surface-primary, color-mix(in srgb, currentColor 4%, transparent)); }
           [${ROOT_ATTRIBUTE}] .bbpk-empty { min-height:48px; }
           @keyframes bbpk-spin { to { transform:rotate(360deg); } }
           @media (max-width:900px) { [${ROOT_ATTRIBUTE}] .bbpk-shell { padding-inline:16px; } [${ROOT_ATTRIBUTE}] .bbpk-board { gap:16px; } }
@@ -584,6 +600,86 @@
         return svg;
       };
 
+      const createChangeIcon = () => {
+        const namespace = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(namespace, "svg");
+        svg.setAttribute("viewBox", "0 0 16 16");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("aria-hidden", "true");
+        const rect = document.createElementNS(namespace, "rect");
+        rect.setAttribute("x", "2.25");
+        rect.setAttribute("y", "2.25");
+        rect.setAttribute("width", "11.5");
+        rect.setAttribute("height", "11.5");
+        rect.setAttribute("rx", "2.25");
+        rect.setAttribute("stroke", "currentColor");
+        rect.setAttribute("stroke-width", "1.25");
+        const horizontal = document.createElementNS(namespace, "path");
+        horizontal.setAttribute("d", "M5.25 8h5.5M8 5.25v5.5");
+        horizontal.setAttribute("stroke", "currentColor");
+        horizontal.setAttribute("stroke-width", "1.25");
+        horizontal.setAttribute("stroke-linecap", "round");
+        svg.append(rect, horizontal);
+        return svg;
+      };
+
+      const createUndoIcon = () => {
+        const namespace = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(namespace, "svg");
+        svg.setAttribute("viewBox", "0 0 16 16");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS(namespace, "path");
+        path.setAttribute("d", "M6.25 4.25 3.5 7l2.75 2.75M3.75 7H9a3.5 3.5 0 1 1 0 7h-1");
+        path.setAttribute("stroke", "currentColor");
+        path.setAttribute("stroke-width", "1.35");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        svg.append(path);
+        return svg;
+      };
+
+      const isActiveChat = (card, control = findNativeChatControl(card)) => Boolean(control && (
+        control.getAttribute("data-app-action-sidebar-thread-active") === "true"
+        || control.getAttribute("aria-current") === "page"
+        || card.href === `${location.pathname}${location.search}`
+      ));
+
+      const findNativeChangeAction = (action) => {
+        const main = [...document.querySelectorAll("main")]
+          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const overlays = [...(main?.querySelectorAll("button[aria-label='Review changed files']") || [])];
+        const overlay = overlays.at(-1);
+        if (!overlay) return null;
+        const header = overlay.parentElement;
+        if (action === "review") {
+          return [...header.querySelectorAll("button")]
+            .find((button) => normalizeText(button.textContent) === "Review") || overlay;
+        }
+        return [...header.querySelectorAll("button")]
+          .find((button) => normalizeText(button.textContent) === "Undo") || null;
+      };
+
+      const runNativeChangeAction = (card, action, attempt = 0) => {
+        const control = findNativeChatControl(card);
+        if (!control) return;
+        if (!isActiveChat(card, control)) {
+          if (attempt === 0) {
+            closeBoard({ restoreFocus: false });
+            control.click();
+          }
+          if (attempt < 24) ownedTimeout(() => runNativeChangeAction(card, action, attempt + 1), 125);
+          return;
+        }
+        const nativeAction = findNativeChangeAction(action);
+        if (!nativeAction) {
+          if (attempt < 24) ownedTimeout(() => runNativeChangeAction(card, action, attempt + 1), 125);
+          return;
+        }
+        closeBoard({ restoreFocus: false });
+        nativeAction.click();
+      };
+
       const setComposerValue = (composer, value) => {
         const isTextControl = composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement;
         const previous = isTextControl ? composer.value : composer.textContent;
@@ -676,17 +772,45 @@
         meta.setAttribute("data-has-project", String(Boolean(card.project)));
         cardNode.append(titleRow, meta);
 
-        if (card.filesChanged || card.additions || card.deletions) {
+        const hasChanges = Boolean(card.filesChanged || card.additions || card.deletions);
+        let changeFooter = null;
+        if (hasChanges) {
+          changeFooter = element("div", {
+            className: "bbpk-change-footer",
+            attributes: { role: "group", "aria-label": `Changes for ${card.title}` }
+          });
+          const changeIcon = element("span", { className: "bbpk-change-icon" });
+          changeIcon.append(createChangeIcon());
+          const changeCopy = element("span", { className: "bbpk-change-copy" });
+          changeCopy.append(element("span", {
+            className: "bbpk-change-title",
+            text: `Edited ${card.filesChanged} ${card.filesChanged === 1 ? "file" : "files"}`
+          }));
           const changes = element("span", { className: "bbpk-changes", attributes: { "aria-label": `${card.filesChanged} files changed, ${card.additions} additions, ${card.deletions} deletions` } });
           changes.append(
-            element("span", { className: "bbpk-files", text: `${card.filesChanged} ${card.filesChanged === 1 ? "file" : "files"}` }),
             element("span", { className: "bbpk-additions", text: `+${card.additions.toLocaleString()}` }),
             element("span", { className: "bbpk-deletions", text: `−${card.deletions.toLocaleString()}` })
           );
-          cardNode.append(changes);
+          changeCopy.append(changes);
+          const actions = element("span", { className: "bbpk-change-actions" });
+          for (const action of ["undo", "review"]) {
+            const actionButton = element("button", {
+              className: `bbpk-change-action${action === "review" ? " bbpk-change-action-review" : ""}`,
+              text: action === "review" ? "Review" : "Undo",
+              attributes: { type: "button", "data-bbpk-change-action": action, "aria-label": `${action === "review" ? "Review" : "Undo"} changes for ${card.title}` }
+            });
+            if (action === "undo") actionButton.append(createUndoIcon());
+            actionButton.addEventListener("click", (event) => {
+              event.stopPropagation();
+              runNativeChangeAction(card, action);
+            }, { signal: state.abortController.signal });
+            actions.append(actionButton);
+          }
+          changeFooter.append(changeIcon, changeCopy, actions);
         }
         cardNode.addEventListener("click", () => card.href ? openNativeChat(card) : runAsChat(card), { signal: state.abortController.signal });
         cardItem.append(cardNode);
+        if (changeFooter) cardItem.append(changeFooter);
         if (card.native && findNativeChatControl(card)) {
           const menu = element("button", {
             className: "bbpk-menu-button",

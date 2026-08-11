@@ -35,6 +35,11 @@ test("renders a native task Kanban, tracks activity and change totals, completes
     </aside>
     <main class="native-main-surface">
       <div data-native-content>Native task<div>src/auth.js +1,400 -900</div><div>tests/auth.test.js +64 -16</div></div>
+      <div class="group/turn-diff-header" data-native-change-header>
+        <button type="button" aria-label="Review changed files"></button>
+        <button type="button" data-native-undo>Undo</button>
+        <button type="button" data-native-review>Review</button>
+      </div>
       <section data-thread-summary>
         <button data-slot="thread-summary-panel-item-button"><span data-slot="thread-summary-panel-item-label">Changes</span></button>
         <button title="Switch branch" data-slot="thread-summary-panel-item-button"><span data-slot="thread-summary-panel-item-label">main</span></button>
@@ -101,10 +106,30 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   assert.doesNotMatch(root.textContent, /Unlinked ChatGPT conversation/);
   assert.doesNotMatch(root.textContent, /Current project/);
   assert.match(runningCard.textContent, /2m/);
-  assert.match(runningCard.textContent, /2 files/);
-  assert.match(runningCard.textContent, /\+1,464/);
-  assert.match(runningCard.textContent, /−916/);
+  const runningCardItem = runningCard.closest(".bbpk-card");
+  const changeFooter = runningCardItem.querySelector(".bbpk-change-footer");
+  assert.ok(changeFooter);
+  assert.equal(runningCard.querySelector(".bbpk-change-footer"), null);
+  assert.match(changeFooter.textContent, /Edited 2 files/);
+  assert.match(changeFooter.textContent, /\+1,464/);
+  assert.match(changeFooter.textContent, /−916/);
+  assert.equal(changeFooter.querySelector("[data-bbpk-change-action='undo']")?.textContent, "Undo");
+  assert.ok(changeFooter.querySelector("[data-bbpk-change-action='undo'] svg[aria-hidden='true']"));
+  assert.equal(changeFooter.querySelector("[data-bbpk-change-action='review']")?.textContent, "Review");
   assert.equal(runningCard.querySelector("[role='status'][aria-label='Running']")?.className, "bbpk-spinner");
+  let reviewedChanges = 0;
+  dom.window.document.querySelector("[data-native-review]").addEventListener("click", () => { reviewedChanges += 1; });
+  changeFooter.querySelector("[data-bbpk-change-action='review']").click();
+  assert.equal(reviewedChanges, 1);
+  assert.equal(root.hidden, true);
+  launcher.click();
+  const reopenedFooter = root.querySelector("[data-bbpk-list='in-progress'] .bbpk-card[data-card-id='chat:thread:local:auth'] .bbpk-change-footer");
+  let undoneChanges = 0;
+  dom.window.document.querySelector("[data-native-undo]").addEventListener("click", () => { undoneChanges += 1; });
+  reopenedFooter.querySelector("[data-bbpk-change-action='undo']").click();
+  assert.equal(undoneChanges, 1);
+  assert.equal(root.hidden, true);
+  launcher.click();
   const nativeMenuTrigger = dom.window.document.querySelector("[data-app-action-sidebar-thread-id='local:auth'] button[aria-label^='More options']");
   nativeMenuTrigger.addEventListener("click", () => {
     const menu = dom.window.document.createElement("div");
@@ -159,6 +184,13 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   const completedCard = root.querySelector("[data-bbpk-list='done'] button[data-card-id='chat:thread:local:auth']");
   assert.ok(completedCard);
   assert.equal(completedCard.querySelector(".bbpk-spinner"), null);
+  assert.equal(completedCard.closest(".bbpk-card").querySelector(".bbpk-change-footer"), null);
+  const pushedCard = JSON.parse(dom.window.localStorage.getItem("bettercodex.project-kanban.v1")).cards
+    .find((card) => card.id === "chat:thread:local:auth");
+  assert.deepEqual(
+    { filesChanged: pushedCard.filesChanged, additions: pushedCard.additions, deletions: pushedCard.deletions },
+    { filesChanged: 0, additions: 0, deletions: 0 }
+  );
   nativeChat.setAttribute("data-app-action-sidebar-thread-active", "false");
 
   nativeChat.setAttribute("data-app-action-sidebar-thread-title", "Authentication shipped");
