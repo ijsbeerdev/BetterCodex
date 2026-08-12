@@ -1,53 +1,33 @@
 $ErrorActionPreference = "Stop"
 $runtimeRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $startScript = Join-Path $runtimeRoot "start.ps1"
-$notifyScript = Join-Path $runtimeRoot "notify.ps1"
+$launcherPath = Join-Path $runtimeRoot "launcher.mjs"
 $logPath = Join-Path $runtimeRoot "bettercodex.log"
 $mutex = New-Object System.Threading.Mutex($false, "Local\BetterCodexCodexWatcher")
-
-if (-not $mutex.WaitOne(0)) { return }
+$ownsMutex = $false
 
 function Write-BetterCodexLog([string]$message) {
     Add-Content -LiteralPath $logPath -Value "$(Get-Date -Format o) [watcher] $message" -ErrorAction SilentlyContinue
 }
 
-function Show-BetterCodexNotification([string]$title, [string]$message) {
-    if (-not (Test-Path -LiteralPath $notifyScript)) { return }
-    Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
-        -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", "`"$notifyScript`"", "-Title", "`"$title`"", "-Message", "`"$message`"") `
-        -WorkingDirectory $runtimeRoot -WindowStyle Hidden
-}
-
-function Get-CodexRootProcess([int]$processId) {
-    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $processId" -ErrorAction SilentlyContinue
-    if ($null -eq $process -or $process.Name -ne "ChatGPT.exe" -or $process.CommandLine -match "--type=") { return $null }
-    return $process
-}
-
-function Test-BetterCodexLauncherRunning {
-    $launcherPath = Join-Path $runtimeRoot "launcher.mjs"
-    $launcher = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -like "*$launcherPath*" } |
+function Test-BetterCodexRuntimeRunning {
+    $runtime = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.CommandLine -like "*$startScript*" -or
+            $_.CommandLine -like "*$launcherPath*"
+        } |
         Select-Object -First 1
-    return $null -ne $launcher
+    return $null -ne $runtime
 }
 
 function Start-BetterCodexRuntime {
     Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
-        -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", "`"$startScript`"") `
+        -ArgumentList @("-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", "`"$startScript`"") `
         -WorkingDirectory $runtimeRoot -WindowStyle Hidden
 }
 
-function Start-PatchedCodex([object]$process) {
-    if ($process.CommandLine -match "--remote-debugging-port=") {
-        if (-not (Test-BetterCodexLauncherRunning)) {
-            Write-BetterCodexLog "Attaching the refreshed BetterCodex runtime to Codex PID $($process.ProcessId)."
-            Start-BetterCodexRuntime
-        }
-        return
-    }
+function Restart-CodexWithBetterCodex([object]$process) {
     Write-BetterCodexLog "Intercepting normal Codex launch (PID $($process.ProcessId))."
-    Show-BetterCodexNotification "BetterCodex is restarting Codex" "Restarting Codex to load BetterCodex."
     Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
     Wait-Process -Id $process.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
     Start-BetterCodexRuntime
@@ -55,26 +35,61 @@ function Start-PatchedCodex([object]$process) {
 
 $seen = New-Object 'System.Collections.Generic.HashSet[int]'
 try {
+    try {
+        $ownsMutex = $mutex.WaitOne(0)
+    } catch [System.Threading.AbandonedMutexException] {
+        $ownsMutex = $true
+        Write-BetterCodexLog "Recovered the launch watcher after an interrupted previous session."
+    }
+    if (-not $ownsMutex) { return }
+
     Write-BetterCodexLog "Launch watcher ready."
+    $nextRuntimeCheck = [DateTime]::MinValue
     while ($true) {
-        $roots = @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction SilentlyContinue |
-            Where-Object { $_.CommandLine -notmatch "--type=" })
-        $liveIds = New-Object 'System.Collections.Generic.HashSet[int]'
-        foreach ($process in $roots) {
-            $processId = [int]$process.ProcessId
-            [void]$liveIds.Add($processId)
-            if ($seen.Add($processId)) {
-                Start-PatchedCodex $process
+        try {
+            $roots = @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction SilentlyContinue |
+                Where-Object { $_.CommandLine -notmatch "--type=" })
+            $liveIds = New-Object 'System.Collections.Generic.HashSet[int]'
+            $hasPatchedCodex = $false
+
+            foreach ($process in $roots) {
+                $processId = [int]$process.ProcessId
+                [void]$liveIds.Add($processId)
+                if ($process.CommandLine -match "--remote-debugging-port=") {
+                    $hasPatchedCodex = $true
+                    continue
+                }
+                if ($seen.Add($processId)) {
+                    try {
+                        Restart-CodexWithBetterCodex $process
+                    } catch {
+                        [void]$seen.Remove($processId)
+                        Write-BetterCodexLog "Could not intercept Codex PID ${processId}: $($_.Exception.Message)"
+                    }
+                }
             }
+
+            foreach ($processId in @($seen)) {
+                if (-not $liveIds.Contains($processId)) { [void]$seen.Remove($processId) }
+            }
+
+            $now = Get-Date
+            if ($hasPatchedCodex -and $now -ge $nextRuntimeCheck) {
+                $nextRuntimeCheck = $now.AddSeconds(2)
+                if (-not (Test-BetterCodexRuntimeRunning)) {
+                    Write-BetterCodexLog "Attaching the refreshed BetterCodex runtime to the running Codex process."
+                    Start-BetterCodexRuntime
+                }
+            }
+        } catch {
+            Write-BetterCodexLog "Watcher scan failed and will retry: $($_.Exception.Message)"
         }
-        foreach ($processId in @($seen)) {
-            if (-not $liveIds.Contains($processId)) { [void]$seen.Remove($processId) }
-        }
-        Start-Sleep -Milliseconds 750
+        Start-Sleep -Milliseconds 250
     }
 } catch {
     Write-BetterCodexLog "Watcher failed: $($_.Exception.Message)"
+    throw
 } finally {
-    $mutex.ReleaseMutex()
+    if ($ownsMutex) { $mutex.ReleaseMutex() }
     $mutex.Dispose()
 }

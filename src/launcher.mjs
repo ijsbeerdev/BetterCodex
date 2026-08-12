@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { access, appendFile, readFile, unlink } from "node:fs/promises";
+import { access, appendFile, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,11 +14,6 @@ const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"),
 const port = Number(process.env.BETTERCODEX_DEBUG_PORT || 11983);
 const profileRoot = process.env.APPDATA || join(homedir(), "AppData", "Roaming");
 const preferencesStore = createPreferencesStore(join(profileRoot, "BetterCodex", "preferences.json"));
-const notificationScript = join(runtimeRoot, "notify.ps1");
-const patchNotificationMarker = join(runtimeRoot, "patch-notification-pending");
-let patchNotificationPending = false;
-try { await access(patchNotificationMarker); patchNotificationPending = true; } catch {}
-
 async function resolveAddonsRoot() {
   const developmentRoot = packageInfo.developmentAddonsPath;
   if (developmentRoot) {
@@ -78,14 +73,6 @@ function showMessage(message, title = "BetterCodex") {
     stdio: "ignore",
     windowsHide: true
   });
-  notification.unref();
-}
-
-function showNotification(title, message) {
-  const notification = spawn("powershell.exe", [
-    "-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass",
-    "-File", notificationScript, "-Title", title, "-Message", message
-  ], { detached: true, stdio: "ignore", windowsHide: true });
   notification.unref();
 }
 
@@ -175,16 +162,6 @@ async function main() {
               });
             }));
             await log(`Injected renderer ${target.id} (${target.type}, ${target.url || "no URL"}).`);
-            if (patchNotificationPending && !target.url?.includes("avatar-overlay")) {
-              try {
-                await unlink(patchNotificationMarker);
-                patchNotificationPending = false;
-                showNotification("BetterCodex patched successfully", "BetterCodex and your enabled add-ons are ready.");
-                await log("Displayed the successful patch notification.");
-              } catch (error) {
-                await log(`Could not display the successful patch notification: ${error.message}`);
-              }
-            }
           } catch (error) {
             await log(`Skipped renderer ${target.id}: ${error.message}`);
           }

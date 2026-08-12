@@ -16,7 +16,7 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 
 ## ✨ What makes it better
 
-- **Launch Codex normally** — the per-user watcher handles injection from your existing Start menu or taskbar shortcut.
+- **Launch Codex normally** — a quiet, self-recovering per-user scheduled watcher handles injection from your existing Start menu or taskbar shortcut.
 - **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
 - **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
 - **Durable preferences** — add-on, tweak, theme, and feature state is backed up in the Windows user profile and survives patching or uninstalling BetterCodex.
@@ -55,7 +55,7 @@ Included add-ons and tweaks are enabled by default. Themes are opt-in, and every
 4. Double-click **Install BetterCodex.cmd**.
 5. If Codex is open, let it briefly restart while BetterCodex loads. Future launches load automatically.
 
-The release includes its own verified portable runtime, so users do not need Node.js or npm. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached. A separate **BetterCodex for ChatGPT Codex** shortcut is also installed as a fallback.
+The release includes its own verified portable runtime, so users do not need Node.js or npm. A clearly named per-user Scheduled Task keeps the watcher running in the background without a startup terminal or patching notifications. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached.
 
 > [!TIP]
 > After installation, look for the robot icon beside **Help** in the bottom-left account toolbar.

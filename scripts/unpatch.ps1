@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = "Stop"
 $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
 $installRoot = Join-Path $localAppData "BetterCodex"
+$watcherTaskName = "BetterCodex ChatGPT Codex Watcher"
 $shortcuts = @(
     (Join-Path ([Environment]::GetFolderPath("Programs")) "BetterCodex for ChatGPT Codex.lnk"),
     (Join-Path ([Environment]::GetFolderPath("Desktop")) "BetterCodex for ChatGPT Codex.lnk"),
@@ -11,6 +12,7 @@ $shortcuts = @(
 )
 
 if ($PSCmdlet.ShouldProcess("BetterCodex runtime processes", "Stop the running BetterCodex runtime")) {
+    Stop-ScheduledTask -TaskName $watcherTaskName -ErrorAction SilentlyContinue
     $runtimeProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
         Where-Object {
             $_.CommandLine -like "*${installRoot}\watcher.ps1*" -or
@@ -20,6 +22,10 @@ if ($PSCmdlet.ShouldProcess("BetterCodex runtime processes", "Stop the running B
         Select-Object -ExpandProperty ProcessId)
     foreach ($processId in $runtimeProcesses) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue }
     foreach ($processId in $runtimeProcesses) { Wait-Process -Id $processId -Timeout 10 -ErrorAction SilentlyContinue }
+}
+
+if ($PSCmdlet.ShouldProcess($watcherTaskName, "Remove the BetterCodex launch watcher")) {
+    Unregister-ScheduledTask -TaskName $watcherTaskName -Confirm:$false -ErrorAction SilentlyContinue
 }
 
 foreach ($shortcut in $shortcuts) {
