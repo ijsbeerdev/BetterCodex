@@ -109,8 +109,8 @@
         html[${ROOT_ATTRIBUTE}][${LOW_CONTRAST_ATTRIBUTE}] body,
         html[${ROOT_ATTRIBUTE}][${LOW_CONTRAST_ATTRIBUTE}] #root {
           background:
-            radial-gradient(circle at 100% 0%, rgba(255, 60, 172, .17), transparent 44rem),
-            radial-gradient(circle at 0% 100%, rgba(50, 230, 255, .14), transparent 52rem),
+            linear-gradient(90deg, rgba(50, 230, 255, .17) 0, rgba(50, 230, 255, .07) 12rem, transparent 34rem),
+            linear-gradient(270deg, rgba(255, 60, 172, .12) 0, rgba(255, 60, 172, .05) 12rem, transparent 34rem),
             linear-gradient(145deg, #07030e 0%, #11071b 48%, #05030a 100%) !important;
           background-attachment: fixed !important;
         }
@@ -165,8 +165,8 @@
 
         html[${ROOT_ATTRIBUTE}] :where(main, [role="main"]) {
           background:
-            radial-gradient(circle at 100% 0%, rgba(255, 60, 172, .09), transparent 38rem),
-            radial-gradient(circle at 0% 100%, rgba(50, 230, 255, .07), transparent 46rem),
+            linear-gradient(90deg, rgba(50, 230, 255, .09) 0, rgba(50, 230, 255, .035) 12rem, transparent 30rem),
+            linear-gradient(270deg, rgba(255, 60, 172, .06) 0, rgba(255, 60, 172, .024) 12rem, transparent 30rem),
             var(--bc-cyber-void) !important;
         }
 
@@ -174,8 +174,8 @@
           background:
             linear-gradient(rgba(50, 230, 255, .043) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 60, 172, .034) 1px, transparent 1px),
-            radial-gradient(circle at 100% 0%, rgba(255, 60, 172, .15), transparent 40rem),
-            radial-gradient(circle at 0% 100%, rgba(50, 230, 255, .12), transparent 48rem),
+            linear-gradient(90deg, rgba(50, 230, 255, .15) 0, rgba(50, 230, 255, .06) 12rem, transparent 34rem),
+            linear-gradient(270deg, rgba(255, 60, 172, .1) 0, rgba(255, 60, 172, .04) 12rem, transparent 34rem),
             linear-gradient(145deg, #07030e, #100719 52%, #05030a) !important;
           background-size: 30px 30px, 30px 30px, auto, auto, auto !important;
           background-attachment: local, local, fixed, fixed, fixed !important;
@@ -198,6 +198,12 @@
           border-color: var(--bc-cyber-border) !important;
           background-color: rgba(6, 3, 11, .94) !important;
           box-shadow: 0 1px 0 rgba(50, 230, 255, .06);
+        }
+
+        html[${ROOT_ATTRIBUTE}] header[data-app-shell-application-menu-bar="true"] {
+          border-color: transparent !important;
+          background: transparent !important;
+          box-shadow: none !important;
         }
 
         html[${ROOT_ATTRIBUTE}] :where(h1, h2, h3, h4) {

@@ -36,11 +36,12 @@ test("Codex 2077 applies globally, skins BetterCodex, and cleans up completely",
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /sidebar-section-heading="Projects"/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /button\[aria-label="Send"\]/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /aria-label="Application menu"/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /header\[data-app-shell-application-menu-bar="true"\]/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /background: transparent !important;\s+box-shadow: none !important/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /border-radius: 2px !important;\s+overflow: hidden/);
-  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /circle at 100% 0%/);
-  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /circle at 0% 100%/);
-  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /transparent 44rem/);
-  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /transparent 52rem/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /linear-gradient\(90deg, rgba\(50, 230, 255, \.17\)/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /linear-gradient\(270deg, rgba\(255, 60, 172, \.12\)/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /transparent 34rem/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /inset: 0 auto 0 0;\s+z-index: 21;\s+width: 2px/);
   assert.match(host.shadowRoot.querySelector("style[data-bettercodex-cyberpunk-theme-manager-style]").textContent, /#32e6ff/);
   assert.match(host.shadowRoot.querySelector("style[data-bettercodex-cyberpunk-theme-manager-style]").textContent, /\.track::after \{ border-radius: 2px/);
