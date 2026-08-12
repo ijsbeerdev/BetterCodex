@@ -181,6 +181,19 @@
           background-attachment: local, local, fixed, fixed, fixed !important;
         }
 
+        html[${ROOT_ATTRIBUTE}] :where(main, [role="main"]):has([data-codex-composer-root][data-composer-placement="home"]) {
+          background: var(--bc-cyber-void) !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}][${LOW_CONTRAST_ATTRIBUTE}] :where(main, [role="main"]):has([data-codex-composer-root][data-composer-placement="home"]) {
+          background:
+            linear-gradient(rgba(50, 230, 255, .043) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 60, 172, .034) 1px, transparent 1px),
+            linear-gradient(145deg, #07030e, #100719 52%, #05030a) !important;
+          background-size: 30px 30px, 30px 30px, auto !important;
+          background-attachment: local, local, fixed !important;
+        }
+
         html[${ROOT_ATTRIBUTE}][${LOW_CONTRAST_ATTRIBUTE}] :where(aside, [role="navigation"]) {
           background:
             linear-gradient(180deg, rgba(255, 60, 172, .07), transparent 25%),
@@ -263,6 +276,24 @@
           box-shadow: inset 2px 0 0 var(--bc-cyber-cyan);
         }
 
+        html[${ROOT_ATTRIBUTE}] [data-app-shell-tab-controller] [data-tab-id][role="button"] {
+          padding: 0 !important;
+          border: 1px solid var(--bc-cyber-border) !important;
+          border-radius: 3px !important;
+          background: linear-gradient(90deg, rgba(255, 60, 172, .12), rgba(50, 230, 255, .055)) !important;
+          box-shadow: inset 2px 0 0 var(--bc-cyber-cyan), inset -1px 0 0 var(--bc-cyber-magenta) !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-app-shell-tab-controller] [data-tab-id][role="button"] button[role="tab"] {
+          width: 100%;
+          height: 100%;
+          padding-inline: 8px !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
         html[${ROOT_ATTRIBUTE}] :where([aria-disabled="true"], :disabled) {
           color: var(--bc-cyber-muted) !important;
           opacity: .5;
@@ -273,6 +304,24 @@
           border-left: 2px solid transparent;
         }
 
+        html[${ROOT_ATTRIBUTE}] :where(aside, [role="navigation"]) .sidebar-item {
+          border-radius: 3px !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] :where(aside, [role="navigation"]) .sidebar-item:hover {
+          border-color: var(--bc-cyber-cyan) !important;
+          background: var(--bc-cyber-hover) !important;
+          color: var(--bc-cyber-text) !important;
+          box-shadow: inset 2px 0 0 var(--bc-cyber-magenta), 0 0 14px rgba(50, 230, 255, .1) !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] :where(aside, [role="navigation"]) .sidebar-item > button {
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
         html[${ROOT_ATTRIBUTE}] :where([data-app-action-sidebar-thread-active="true"], [data-app-action-sidebar-thread-selected="true"], [data-app-action-sidebar-project-row][aria-expanded="true"]) {
           border-left-color: var(--bc-cyber-cyan) !important;
           background: linear-gradient(90deg, rgba(50, 230, 255, .12), rgba(255, 60, 172, .055)) !important;
@@ -280,6 +329,7 @@
         }
 
         html[${ROOT_ATTRIBUTE}] :where(
+          [data-app-action-sidebar-section-heading="Pinned"],
           [data-app-action-sidebar-section-heading="Projects"],
           [data-app-action-sidebar-section-heading="Recents"]
         ) {
@@ -287,6 +337,7 @@
         }
 
         html[${ROOT_ATTRIBUTE}] :where(
+          [data-app-action-sidebar-section-heading="Pinned"],
           [data-app-action-sidebar-section-heading="Projects"],
           [data-app-action-sidebar-section-heading="Recents"]
         ) [data-app-action-sidebar-section-toggle] {
@@ -302,6 +353,7 @@
         }
 
         html[${ROOT_ATTRIBUTE}] :where(
+          [data-app-action-sidebar-section-heading="Pinned"],
           [data-app-action-sidebar-section-heading="Projects"],
           [data-app-action-sidebar-section-heading="Recents"]
         ) [data-app-action-sidebar-section-toggle]::before {
@@ -314,6 +366,7 @@
         }
 
         html[${ROOT_ATTRIBUTE}] :where(
+          [data-app-action-sidebar-section-heading="Pinned"],
           [data-app-action-sidebar-section-heading="Projects"],
           [data-app-action-sidebar-section-heading="Recents"]
         ) [data-app-action-sidebar-section-toggle] * {
@@ -322,6 +375,7 @@
         }
 
         html[${ROOT_ATTRIBUTE}] :where(
+          [data-app-action-sidebar-section-heading="Pinned"],
           [data-app-action-sidebar-section-heading="Projects"],
           [data-app-action-sidebar-section-heading="Recents"]
         ) [data-app-action-sidebar-section-toggle]:hover {
@@ -465,9 +519,50 @@
           box-shadow: 0 0 0 1px rgba(50, 230, 255, .05), 0 16px 42px rgba(0, 0, 0, .58), inset 3px 0 0 var(--bc-cyber-cyan), inset -2px 0 0 var(--bc-cyber-magenta) !important;
         }
 
+        html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]::before,
+        html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          z-index: 20;
+          display: block;
+          pointer-events: none;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]::before {
+          left: 0;
+          width: 3px;
+          background: var(--bc-cyber-cyan);
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]::after {
+          right: 0;
+          width: 2px;
+          background: var(--bc-cyber-magenta);
+        }
+
         html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]:focus-within {
-          border-color: var(--bc-cyber-cyan) !important;
+          border-color: var(--bc-cyber-border-hot) !important;
           box-shadow: 0 0 0 1px rgba(50, 230, 255, .16), 0 0 26px rgba(50, 230, 255, .09), inset 3px 0 0 var(--bc-cyber-cyan), inset -2px 0 0 var(--bc-cyber-magenta) !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-codex-composer-root][data-composer-placement="home"] [data-composer-home-utility-bar-position="above"] {
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-codex-composer-root][data-composer-placement="home"] [data-composer-radius-variant][data-composer-surface-variant] {
+          gap: 0 !important;
+          border: 0 !important;
+          overflow: hidden !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-codex-composer-root][data-composer-placement="home"] [data-composer-radius-variant][data-composer-surface-variant] > [data-composer-layout] {
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
         }
 
         html[${ROOT_ATTRIBUTE}] [data-codex-composer] {
