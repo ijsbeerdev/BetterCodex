@@ -34,15 +34,15 @@ test("persists preferences atomically outside the runtime", async (t) => {
   const store = createPreferencesStore(path);
 
   assert.equal((await store.load()).persisted, false);
-  await store.save({ storage: { "bettercodex:addons:v1": "{\"cli-theme\":true}" } });
-  await store.save({ storage: { "bettercodex:addons:v1": "{\"cli-theme\":false}" } });
+  await store.save({ storage: { "bettercodex:addons:v1": "{\"cyberpunk-theme\":true}" } });
+  await store.save({ storage: { "bettercodex:addons:v1": "{\"cyberpunk-theme\":false}" } });
 
   assert.deepEqual(await loadPreferences(path), {
     version: 1,
-    storage: { "bettercodex:addons:v1": "{\"cli-theme\":false}" },
+    storage: { "bettercodex:addons:v1": "{\"cyberpunk-theme\":false}" },
     persisted: true
   });
-  assert.match(await readFile(path, "utf8"), /cli-theme/);
+  assert.match(await readFile(path, "utf8"), /cyberpunk-theme/);
 });
 
 test("bridges renderer preference snapshots to the profile store", async () => {

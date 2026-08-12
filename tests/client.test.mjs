@@ -42,7 +42,7 @@ function setup(options = {}) {
   return { dom, payload };
 }
 
-test("mounts a themed native button beside Help and opens a full-page view", () => {
+test("mounts a themed native button after Help and opens a full-page view", () => {
   const { dom } = setup();
   const document = dom.window.document;
   const host = document.getElementById("bettercodex-client-root");
@@ -51,7 +51,7 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   const launcherStyle = document.getElementById("bettercodex-native-launcher-style");
   const help = document.querySelector("[aria-label='Open help menu']");
   assert.equal(host.style.top, "36px");
-  assert.equal(launcher.nextElementSibling, help);
+  assert.equal(launcher.previousElementSibling, help);
   assert.equal(launcher.className, help.className);
   assert.equal(launcher.textContent.trim(), "");
   assert.equal(launcher.querySelector("[data-bettercodex-icon]").tagName, "svg");
@@ -61,6 +61,9 @@ test("mounts a themed native button beside Help and opens a full-page view", () 
   assert.match(launcherStyle.textContent, /rgba\(59,130,246,\.45\)/);
   assert.match(launcherStyle.textContent, /prefers-reduced-motion:reduce/);
   assert.match(launcherStyle.textContent, /:focus-visible/);
+  assert.match(launcherStyle.textContent, /@keyframes bettercodex-launcher-intro-shell/);
+  assert.match(launcherStyle.textContent, /@keyframes bettercodex-launcher-intro-sweep/);
+  assert.match(launcherStyle.textContent, /animation:none; transition:none/);
   assert.equal(host.style.display, "none");
   launcher.click();
   assert.equal(host.style.display, "block");
@@ -317,6 +320,6 @@ test("waits for the native toolbar before showing its launcher", async () => {
   help.getBoundingClientRect = () => ({ left: 235, top: 735, right: 267, bottom: 767, width: 32, height: 32 });
   dom.window.document.body.append(help);
   await delay(15);
-  assert.equal(dom.window.document.getElementById("bettercodex-native-launcher")?.nextElementSibling, help);
+  assert.equal(dom.window.document.getElementById("bettercodex-native-launcher")?.previousElementSibling, help);
   dom.window.BetterCodex.destroy();
 });

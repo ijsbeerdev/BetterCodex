@@ -99,6 +99,7 @@
         isolation:isolate;
         overflow:hidden;
         transition:color 180ms ease,background 180ms ease,box-shadow 220ms ease,transform 180ms ease;
+        animation:bettercodex-launcher-intro-shell 1100ms ease 180ms;
       }
       #${LAUNCHER_ID}::after {
         content:"";
@@ -110,11 +111,32 @@
         background:linear-gradient(110deg,transparent 16%,rgba(186,230,253,.5) 48%,transparent 80%);
         transform:translateX(-75%);
         transition:transform 480ms ease,opacity 180ms ease;
+        animation:bettercodex-launcher-intro-sweep 1100ms ease 180ms;
       }
       #${LAUNCHER_ID} [data-bettercodex-icon] {
         position:relative;
         z-index:1;
         transition:color 180ms ease,filter 220ms ease,transform 220ms cubic-bezier(.2,.8,.2,1);
+        animation:bettercodex-launcher-intro-icon 1100ms cubic-bezier(.2,.8,.2,1) 180ms;
+      }
+      @keyframes bettercodex-launcher-intro-shell {
+        28%,72% {
+          color:#7dd3fc;
+          background:linear-gradient(135deg,rgba(14,165,233,.2),rgba(37,99,235,.24));
+          box-shadow:0 0 0 1px rgba(96,165,250,.5),0 0 18px rgba(59,130,246,.45),inset 0 0 12px rgba(56,189,248,.12);
+        }
+      }
+      @keyframes bettercodex-launcher-intro-sweep {
+        0%,20% { opacity:0; transform:translateX(-75%); }
+        32%,65% { opacity:1; }
+        78%,100% { opacity:0; transform:translateX(75%); }
+      }
+      @keyframes bettercodex-launcher-intro-icon {
+        28%,72% {
+          color:#7dd3fc;
+          filter:drop-shadow(0 0 5px rgba(56,189,248,.95));
+          transform:scale(1.1) rotate(-4deg);
+        }
       }
       #${LAUNCHER_ID}:is(:hover,:focus-visible) {
         color:#7dd3fc !important;
@@ -132,7 +154,7 @@
       }
       #${LAUNCHER_ID}:active { transform:translateY(0) scale(.96); }
       @media (prefers-reduced-motion:reduce) {
-        #${LAUNCHER_ID},#${LAUNCHER_ID}::after,#${LAUNCHER_ID} [data-bettercodex-icon] { transition:none; }
+        #${LAUNCHER_ID},#${LAUNCHER_ID}::after,#${LAUNCHER_ID} [data-bettercodex-icon] { animation:none; transition:none; }
         #${LAUNCHER_ID}:is(:hover,:focus-visible) { transform:none; }
         #${LAUNCHER_ID}::after { display:none; }
       }
@@ -638,7 +660,7 @@
       launcher.title = "BetterCodex";
       launcher.innerHTML = BETTERCODEX_ICON;
       launcher.addEventListener("click", open, { signal: controller.signal });
-      help.before(launcher);
+      help.after(launcher);
       updateTheme();
     };
 

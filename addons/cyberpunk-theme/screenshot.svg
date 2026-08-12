@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280" role="img" aria-labelledby="title desc">
+  <title id="title">Codex 2077 theme for BetterCodex</title>
+  <desc id="desc">A neon night Codex window with cyan and magenta accents, angular panels, glowing controls, and a subtle city-grid atmosphere.</desc>
+  <defs>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10091b"/>
+      <stop offset=".52" stop-color="#06030b"/>
+      <stop offset="1" stop-color="#0c0614"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#32e6ff"/>
+      <stop offset="1" stop-color="#ff3cac"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#32e6ff" stroke-opacity=".045"/>
+    </pattern>
+    <pattern id="scan" width="5" height="5" patternUnits="userSpaceOnUse">
+      <path d="M0 4.5H640" stroke="#9af4ff" stroke-opacity=".035"/>
+    </pattern>
+    <filter id="cyan-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="pink-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="640" height="280" rx="12" fill="url(#screen)"/>
+  <rect width="640" height="280" rx="12" fill="url(#grid)"/>
+  <rect x=".5" y=".5" width="639" height="279" rx="11.5" fill="none" stroke="#6b3c82"/>
+
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <path d="M1 12Q1 1 12 1h616q11 0 11 11v14H1Z" fill="#09050f"/>
+    <path d="M1 25.5h638" stroke="url(#neon)" stroke-opacity=".58"/>
+    <path d="M14 13h5m4 0h5m4 0h5" stroke="#ff3cac" stroke-width="2" filter="url(#pink-glow)"/>
+    <text x="51" y="17" fill="#a990bd" font-family="Cascadia Code,Consolas,monospace" font-size="8">CODEX 2077 // NIGHT CITY INTERFACE</text>
+    <circle cx="571" cy="13" r="2.5" fill="#32e6ff" filter="url(#cyan-glow)"/>
+    <text x="625" y="17" text-anchor="end" fill="#9af4ff" font-family="Cascadia Code,Consolas,monospace" font-size="7.5">UPLINK 100%</text>
+
+    <path d="M1 26h151v253H1Z" fill="#0b0612" fill-opacity=".96"/>
+    <path d="M152 26v253" stroke="#3d2759"/>
+    <path d="M151 53v51" stroke="#32e6ff" stroke-opacity=".45"/>
+    <path d="M151 194v35" stroke="#ff3cac" stroke-opacity=".55"/>
+    <text x="15" y="50" fill="#32e6ff" font-family="Cascadia Code,Consolas,monospace" font-size="8.5" font-weight="700">// BETTERCODEX</text>
+    <text x="15" y="74" fill="#f4edff" font-size="8.5">＋ New task</text>
+    <text x="15" y="101" font-family="Cascadia Code,Consolas,monospace" font-size="7" font-weight="700"><tspan fill="#ff3cac">//</tspan><tspan fill="#f4edff"> PROJECTS</tspan></text>
+    <text x="15" y="121" fill="#f4edff" font-size="8">⌄ NIGHT CITY</text>
+    <path d="M7 131h137v28H14l-7-7Z" fill="#211333" stroke="#5b3878"/>
+    <path d="M7 131v21l7 7" fill="none" stroke="#32e6ff" stroke-width="2" filter="url(#cyan-glow)"/>
+    <text x="17" y="149" fill="#f4edff" font-size="8">› Build cyberpunk theme</text>
+    <text x="17" y="178" fill="#a990bd" font-size="8">  Tune neon palette</text>
+    <text x="17" y="198" fill="#a990bd" font-size="8">  Validate cleanup</text>
+    <path d="M14 241h116" stroke="#3d2759"/>
+    <circle cx="17" cy="258" r="3" fill="#32e6ff" filter="url(#cyan-glow)"/>
+    <text x="27" y="261" fill="#a990bd" font-size="7.5">SYSTEM ONLINE</text>
+
+    <g transform="translate(176 48)">
+      <text x="0" y="0" fill="#ff3cac" font-family="Cascadia Code,Consolas,monospace" font-size="8" font-weight="700">CODEX // 09</text>
+      <text x="0" y="22" fill="#f4edff" font-size="11" font-weight="700">Welcome to the neon grid.</text>
+      <text x="0" y="44" fill="#bfaecc" font-size="8">Codex 2077 is live across every surface.</text>
+
+      <g transform="translate(0 61)">
+        <path d="M0 0h126l7 7v33H0Z" fill="#10091b" stroke="#3d2759"/>
+        <path d="M0 0h56" stroke="#32e6ff" stroke-width="2"/>
+        <text x="12" y="17" fill="#32e6ff" font-size="7">CYAN CIRCUITS</text>
+        <text x="12" y="31" fill="#a990bd" font-size="6.5">navigation + focus</text>
+
+        <path d="M143 0h126l7 7v33H143Z" fill="#10091b" stroke="#3d2759"/>
+        <path d="M143 0h56" stroke="#ff3cac" stroke-width="2"/>
+        <text x="155" y="17" fill="#ff78c5" font-size="7">MAGENTA SIGNAL</text>
+        <text x="155" y="31" fill="#a990bd" font-size="6.5">status + selection</text>
+
+        <path d="M286 0h126l7 7v33H286Z" fill="#10091b" stroke="#3d2759"/>
+        <path d="M286 0h56" stroke="#ffd166" stroke-width="2"/>
+        <text x="298" y="17" fill="#ffd166" font-size="7">SAFE APPROVALS</text>
+        <text x="298" y="31" fill="#a990bd" font-size="6.5">warning channel</text>
+      </g>
+
+      <path d="M0 121h430v52H7l-7-7Z" fill="#040207" stroke="#3d2759"/>
+      <path d="M0 121v45l7 7" fill="none" stroke="#32e6ff" stroke-width="3"/>
+      <path d="M430 128v45h-55" fill="none" stroke="#ff3cac" stroke-opacity=".6"/>
+      <text x="15" y="141" fill="#a990bd" font-family="Cascadia Code,Consolas,monospace" font-size="7.5">$ bettercodex theme enable cyberpunk</text>
+      <text x="15" y="159" fill="#32e6ff" font-family="Cascadia Code,Consolas,monospace" font-size="7.5">uplink:</text>
+      <text x="55" y="159" fill="#f4edff" font-family="Cascadia Code,Consolas,monospace" font-size="7.5">visual layer synchronized</text>
+
+      <path d="M0 190h430v39H8l-8-8Z" fill="#171026" stroke="#8656ad"/>
+      <path d="M0 190h99" stroke="#32e6ff" stroke-width="2" filter="url(#cyan-glow)"/>
+      <path d="M331 229h99" stroke="#ff3cac" stroke-width="2" filter="url(#pink-glow)"/>
+      <text x="16" y="214" fill="#a990bd" font-size="8.5">Ask Codex anything in the night city</text>
+      <path d="M397 199h24v21h-20l-4-4Z" fill="#211333" stroke="#32e6ff"/>
+      <text x="409" y="214" text-anchor="middle" fill="#9af4ff" font-size="9">↑</text>
+    </g>
+  </g>
+
+  <rect width="640" height="280" rx="12" fill="url(#scan)" pointer-events="none"/>
+</svg>

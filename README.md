@@ -30,7 +30,7 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 | Category | Feature | What it does |
 | --- | --- | --- |
 | Add-on | **Kanban** | Groups Codex tasks by live activity, approval state, completion, and code-change totals. |
-| Theme | **CLI** | Turns Codex into a phosphor terminal with monospace type, scanlines, and command-line color. |
+| Theme | **Codex 2077** | Turns Codex into a neon night-city interface with cyan circuits and magenta signals. |
 | Tweak | **Approval Shelf** | Keeps Codex's real composer and draft visible beneath approval prompts. |
 | Tweak | **Auto Expand Activity** | Automatically opens collapsed command and file-edit activity in conversations. |
 
@@ -43,7 +43,7 @@ Included add-ons and tweaks are enabled by default. Themes are opt-in, and every
   </tr>
   <tr>
     <td width="50%"><img src="addons/auto-expand-activity/screenshot.svg" alt="Auto Expand Activity add-on preview"><br><strong>Auto Expand Activity</strong></td>
-    <td width="50%"><img src="addons/cli-theme/screenshot.svg" alt="CLI theme preview"><br><strong>CLI</strong></td>
+    <td width="50%"><img src="addons/cyberpunk-theme/screenshot.svg" alt="Codex 2077 theme preview"><br><strong>Codex 2077</strong></td>
   </tr>
 </table>
 

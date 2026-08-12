@@ -12,7 +12,7 @@ const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 test("bundled add-ons load without a hot-reload toggle", async () => {
   const addonsRoot = fileURLToPath(new URL("../addons", import.meta.url));
   const addons = await loadAddons(addonsRoot);
-  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cli-theme", "project-kanban", "thinking-mode-colors"]);
+  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cyberpunk-theme", "project-kanban", "thinking-mode-colors"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
   const dom = new JSDOM("<!doctype html><body><button aria-label='Open help menu'></button></body>", {
