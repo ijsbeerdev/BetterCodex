@@ -44,6 +44,8 @@
           --bc-cyber-magenta: #ff3cac;
           --bc-cyber-yellow: #ffd166;
           --bc-cyber-red: #ff557f;
+          --bc-cyber-composer-surface: var(--bc-cyber-raised);
+          --bc-cyber-composer-gradient: linear-gradient(100deg, #17192d 0%, #16172b 11%, #161124 35%, #181126 50%, #1c1227 80%, #1f1229 100%);
           --bc-cyber-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
           --bc-cyber-mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
           --font-sans: var(--bc-cyber-font);
@@ -513,9 +515,7 @@
           border: 1px solid var(--bc-cyber-border-hot) !important;
           border-radius: 2px !important;
           overflow: hidden;
-          background:
-            linear-gradient(100deg, rgba(50, 230, 255, .055), transparent 35%, rgba(255, 60, 172, .05)),
-            var(--bc-cyber-raised) !important;
+          background: var(--bc-cyber-composer-surface) !important;
           box-shadow: 0 0 0 1px rgba(50, 230, 255, .05), 0 16px 42px rgba(0, 0, 0, .58), inset 3px 0 0 var(--bc-cyber-cyan), inset -2px 0 0 var(--bc-cyber-magenta) !important;
         }
 
@@ -542,9 +542,14 @@
           background: var(--bc-cyber-magenta);
         }
 
+        html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant] > [data-composer-layout] {
+          border: 0 none !important;
+          background: var(--bc-cyber-composer-gradient) !important;
+        }
+
         html[${ROOT_ATTRIBUTE}] [data-composer-radius-variant][data-composer-surface-variant]:focus-within {
           border-color: var(--bc-cyber-border-hot) !important;
-          box-shadow: 0 0 0 1px rgba(50, 230, 255, .16), 0 0 26px rgba(50, 230, 255, .09), inset 3px 0 0 var(--bc-cyber-cyan), inset -2px 0 0 var(--bc-cyber-magenta) !important;
+          box-shadow: 0 0 0 1px rgba(50, 230, 255, .05), 0 16px 42px rgba(0, 0, 0, .58), inset 3px 0 0 var(--bc-cyber-cyan), inset -2px 0 0 var(--bc-cyber-magenta) !important;
         }
 
         html[${ROOT_ATTRIBUTE}] [data-codex-composer-root][data-composer-placement="home"] [data-composer-home-utility-bar-position="above"] {
@@ -557,11 +562,16 @@
           gap: 0 !important;
           border: 0 !important;
           overflow: hidden !important;
+          background: var(--bc-cyber-composer-surface) !important;
+        }
+
+        html[${ROOT_ATTRIBUTE}] [data-codex-composer]:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
         }
 
         html[${ROOT_ATTRIBUTE}] [data-codex-composer-root][data-composer-placement="home"] [data-composer-radius-variant][data-composer-surface-variant] > [data-composer-layout] {
           border-radius: 0 !important;
-          background: transparent !important;
           box-shadow: none !important;
         }
 

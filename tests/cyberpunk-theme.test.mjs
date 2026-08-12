@@ -42,7 +42,13 @@ test("Codex 2077 applies globally, skins BetterCodex, and cleans up completely",
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-app-shell-tab-controller/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-home-utility-bar-position="above"/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-placement="home"/);
-  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-placement="home"\][^{]+\{\s+gap: 0 !important;\s+border: 0 !important/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /--bc-cyber-composer-surface: var\(--bc-cyber-raised\)/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /--bc-cyber-composer-gradient: linear-gradient\(100deg, #17192d 0%, #16172b 11%, #161124 35%, #181126 50%, #1c1227 80%, #1f1229 100%\)/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /> \[data-composer-layout\] \{\s+border: 0 none !important;\s+background: var\(--bc-cyber-composer-gradient\) !important/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-placement="home"\][^{]+\{\s+gap: 0 !important;\s+border: 0 !important;\s+overflow: hidden !important;\s+background: var\(--bc-cyber-composer-surface\) !important/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-surface-variant\]:focus-within \{\s+border-color: var\(--bc-cyber-border-hot\) !important;\s+box-shadow: 0 0 0 1px rgba\(50, 230, 255, \.05\)/);
+  assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /\[data-codex-composer\]:focus-visible \{\s+outline: none !important;\s+box-shadow: none !important/);
+  assert.doesNotMatch(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-placement="home"\][^{]+> \[data-composer-layout\][^{]+background: transparent/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /data-composer-surface-variant\]::before/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /z-index: 20;\s+display: block;\s+pointer-events: none/);
   assert.match(dom.window.document.querySelector("style[data-bettercodex-cyberpunk-theme-style]").textContent, /:has\(\[data-codex-composer-root\]\[data-composer-placement="home"\]\)/);
