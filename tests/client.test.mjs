@@ -116,6 +116,32 @@ test("mounts a themed native button after Help and opens a full-page view", () =
   assert.equal(document.getElementById("bettercodex-native-launcher-style"), null);
 });
 
+test("uses dark Codex surface tokens for the BetterCodex shadow UI", async () => {
+  const { dom } = setup({
+    prepare({ window }) {
+      window.document.documentElement.className = "dark";
+    }
+  });
+  const document = dom.window.document;
+  const host = document.getElementById("bettercodex-client-root");
+  const stylesheet = host.shadowRoot.querySelector("style").textContent;
+
+  assert.equal(host.dataset.theme, "dark");
+  assert.match(stylesheet, /--bb-surface:var\(--color-token-main-surface-secondary/);
+  assert.match(stylesheet, /:host\(\[data-theme="dark"\]\) \{ color-scheme:dark; \}/);
+  assert.doesNotMatch(stylesheet, /--bb-surface:var\(--color-token-input-background/);
+
+  document.documentElement.className = "electron-light";
+  await delay(5);
+  assert.equal(host.dataset.theme, "light");
+
+  document.documentElement.className = "";
+  document.documentElement.dataset.theme = "dark";
+  await delay(5);
+  assert.equal(host.dataset.theme, "dark");
+  dom.window.BetterCodex.destroy();
+});
+
 test("searches and filters catalog cards by state and tags", () => {
   const { dom } = setup();
   const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;

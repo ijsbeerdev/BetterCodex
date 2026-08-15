@@ -168,12 +168,15 @@
     const shadow = host.attachShadow({ mode: "open" });
     shadow.innerHTML = `
       <style>
-        :host { all:initial; --bb-bg:var(--color-token-main-surface-primary,#fff);
-          --bb-side:var(--vscode-sideBar-background,#f7f7f7); --bb-surface:var(--color-token-input-background,#f3f3f3);
-          --bb-hover:var(--color-token-list-hover-background,rgba(0,0,0,.065));
-          --bb-border:var(--color-token-border-default,rgba(0,0,0,.13)); --bb-text:var(--color-token-foreground,#161616);
-          --bb-muted:var(--color-token-description-foreground,#666); --bb-icon:var(--color-token-icon-foreground,currentColor);
-          color-scheme:inherit; }
+        :host { all:initial; --bb-bg:var(--color-token-main-surface-primary,var(--vscode-editor-background,#fff));
+          --bb-side:var(--color-token-sidebar-surface-primary,var(--vscode-sideBar-background,var(--bb-bg)));
+          --bb-text:var(--color-token-text-primary,var(--color-token-foreground,var(--vscode-foreground,#161616)));
+          --bb-surface:var(--color-token-main-surface-secondary,color-mix(in srgb,var(--bb-bg) 94%,var(--bb-text)));
+          --bb-hover:var(--color-token-list-hover-background,var(--vscode-list-hoverBackground,color-mix(in srgb,var(--bb-text) 7%,transparent)));
+          --bb-border:var(--color-token-border-light,var(--color-token-border-default,color-mix(in srgb,var(--bb-text) 13%,transparent)));
+          --bb-muted:var(--color-token-text-tertiary,var(--color-token-description-foreground,color-mix(in srgb,var(--bb-text) 62%,var(--bb-bg))));
+          --bb-icon:var(--color-token-icon-foreground,currentColor); color-scheme:light; }
+        :host([data-theme="dark"]) { color-scheme:dark; }
         * { box-sizing:border-box; }
         button, a, input { font:inherit; }
         .view { width:100%; height:100%; min-height:0; display:flex; color:var(--bb-text); background:var(--bb-bg);
@@ -545,8 +548,16 @@
     };
     const updateTheme = () => {
       const prefersDark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
-      const dark = document.documentElement.classList.contains("electron-dark") ||
-        (!document.documentElement.classList.contains("electron-light") && prefersDark);
+      const roots = [document.documentElement, document.body].filter(Boolean);
+      const hasClass = (name) => roots.some((root) => root.classList.contains(name));
+      const declaredTheme = roots.map((root) => [
+        root.getAttribute("data-theme"),
+        root.getAttribute("data-color-theme"),
+        root.getAttribute("data-color-mode")
+      ].filter(Boolean).join(" ")).join(" ").toLowerCase();
+      const explicitlyDark = hasClass("electron-dark") || hasClass("vscode-dark") || hasClass("dark") || /\bdark\b/.test(declaredTheme);
+      const explicitlyLight = hasClass("electron-light") || hasClass("vscode-light") || hasClass("light") || /\blight\b/.test(declaredTheme);
+      const dark = explicitlyDark || (!explicitlyLight && prefersDark);
       host.dataset.theme = dark ? "dark" : "light";
       launcher?.querySelector("[data-bettercodex-icon]")?.style.setProperty("color", dark ? "#fff" : "#000");
     };
@@ -741,7 +752,7 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class"]
+      attributeFilter: ["class", "data-theme", "data-color-theme", "data-color-mode"]
     });
     if (document.documentElement) beginObserving();
     else document.addEventListener("DOMContentLoaded", beginObserving, { once: true, signal: controller.signal });
