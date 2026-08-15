@@ -1,0 +1,11 @@
+{
+  "id": "project-workspace",
+  "name": "Workspace",
+  "version": "0.1.0",
+  "description": "A project-scoped documentation workspace with nested pages, rich blocks, search, and Codex context actions.",
+  "creator": "Local creator",
+  "category": "addon",
+  "tags": ["Projects", "Productivity", "Documentation"],
+  "screenshot": "screenshot.svg",
+  "enabledByDefault": true
+}

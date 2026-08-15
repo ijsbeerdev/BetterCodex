@@ -1,3 +1,42 @@
+export function isCodexAppUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "app:" && url.hostname === "-" && url.pathname === "/index.html";
+  } catch {
+    return false;
+  }
+}
+
+export function isCodexAppTarget(target) {
+  return Boolean(
+    target?.webSocketDebuggerUrl
+    && target.type === "page"
+    && isCodexAppUrl(target.url)
+  );
+}
+
+export function scopeExpressionToCodexApp(expression) {
+  return `if (
+    globalThis.location?.protocol === "app:"
+    && globalThis.location?.hostname === "-"
+    && globalThis.location?.pathname === "/index.html"
+  ) {\n${expression}\n}`;
+}
+
+export async function getDebuggerTargets(port, fetchImpl = globalThis.fetch) {
+  const origins = [`http://[::1]:${port}`, `http://127.0.0.1:${port}`];
+  const requests = origins.map(async (origin) => {
+    const response = await fetchImpl(`${origin}/json/list`, { signal: AbortSignal.timeout(1_000) });
+    if (!response.ok) throw new Error(`Debugger at ${origin} returned ${response.status}`);
+    return response.json();
+  });
+  try {
+    return await Promise.any(requests);
+  } catch {
+    throw new Error("Could not reach the Codex debugger on the local loopback interface.");
+  }
+}
+
 export class CdpConnection {
   constructor(url) {
     this.url = url;

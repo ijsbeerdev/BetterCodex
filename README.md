@@ -92,7 +92,7 @@ addons/my-addon/
 └── screenshot.svg
 ```
 
-Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, default state, screenshot, and an `addon`, `tweak`, or `theme` category shown in BetterCodex settings.
+Add-ons register with `BetterCodex.register({ id, start, stop })`. `start()` activates the feature; cleanup-capable `stop()` reverses every DOM change, observer, listener, style, and timer when the add-on is disabled or hot-reloaded. The manifest supplies the metadata, including a `creator` label, optional public `shareUrl`, default state, screenshot, and an `addon`, `tweak`, or `theme` category shown in BetterCodex settings. Every catalog card can be shared through the system share sheet or, when provided, by copying its direct link.
 
 The **Generate add-on**, **Generate tweak**, and **Generate theme** actions sit beside their catalog search bars. Each opens a fresh Codex task with the target directory and category-specific implementation requirements attached—just describe what you want. The requirements keep generated entries aligned with the current category, lifecycle conventions, and Codex's native components and visual language.
 

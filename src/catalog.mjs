@@ -17,6 +17,17 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   for (const field of ["name", "version", "description"]) {
     if (typeof manifest[field] !== "string" || !manifest[field].trim()) throw new Error(`Add-on ${manifest.id} needs ${field}`);
   }
+  if (manifest.creator !== undefined
+    && (typeof manifest.creator !== "string" || !manifest.creator.trim() || manifest.creator.trim().length > 60)) {
+    throw new Error(`Add-on ${manifest.id} creator must be a short, non-empty name`);
+  }
+  if (manifest.shareUrl !== undefined) {
+    let shareUrl;
+    try { shareUrl = new URL(manifest.shareUrl); } catch {}
+    if (typeof manifest.shareUrl !== "string" || !shareUrl || !["http:", "https:"].includes(shareUrl.protocol)) {
+      throw new Error(`Add-on ${manifest.id} shareUrl must be an HTTP or HTTPS URL`);
+    }
+  }
   if (manifest.category !== undefined && !["addon", "tweak", "theme"].includes(manifest.category)) {
     throw new Error(`Add-on ${manifest.id} category must be addon, tweak, or theme`);
   }

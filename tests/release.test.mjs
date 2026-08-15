@@ -34,9 +34,11 @@ test("release installer is self-contained, quiet, immediate, and reversible", as
   assert.doesNotMatch(install, /IgnoreExisting/);
   assert.doesNotMatch(watcher, /IgnoreExisting/);
   assert.match(watcher, /Attaching the refreshed BetterCodex runtime/);
+  assert.match(watcher, /if \(\$hasPatchedCodex\) \{ continue \}/);
   assert.match(watcher, /Watcher scan failed and will retry/);
   assert.doesNotMatch(watcher, /Notification|NotifyIcon/);
   assert.doesNotMatch(launcher, /Notification|NotifyIcon|patch-notification-pending/);
+  assert.match(launcher, /child\.unref\(\)/);
   assert.doesNotMatch(install, /patch-notification-pending/);
   assert.doesNotMatch(patch, /patch-notification-pending/);
   assert.doesNotMatch(install, /wscript|\.vbs/i);

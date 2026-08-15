@@ -50,15 +50,17 @@ try {
             $roots = @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction SilentlyContinue |
                 Where-Object { $_.CommandLine -notmatch "--type=" })
             $liveIds = New-Object 'System.Collections.Generic.HashSet[int]'
-            $hasPatchedCodex = $false
+            $hasPatchedCodex = $null -ne ($roots |
+                Where-Object { $_.CommandLine -match "--remote-debugging-port=" } |
+                Select-Object -First 1)
 
             foreach ($process in $roots) {
                 $processId = [int]$process.ProcessId
                 [void]$liveIds.Add($processId)
                 if ($process.CommandLine -match "--remote-debugging-port=") {
-                    $hasPatchedCodex = $true
                     continue
                 }
+                if ($hasPatchedCodex) { continue }
                 if ($seen.Add($processId)) {
                     try {
                         Restart-CodexWithBetterCodex $process

@@ -25,11 +25,11 @@ function setup(options = {}) {
     addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
     preferences: options.preferences,
     addons: [{
-      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", category: "addon", tags: ["Productivity", "Projects"], enabledByDefault: true },
+      manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", creator: "Test Creator", shareUrl: "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-addon", category: "addon", tags: ["Productivity", "Projects"], enabledByDefault: true },
       screenshot: "data:image/svg+xml;base64,PHN2Zy8+",
       source: `BetterCodex.register({ id: "test-addon", start() { document.body.dataset.addon = "on"; }, stop() { delete document.body.dataset.addon; } });`
     }, {
-      manifest: { id: "test-tweak", name: "Test tweak", version: "1.0.0", description: "Tests tweak grouping.", category: "tweak", tags: ["Workflow"], enabledByDefault: true },
+      manifest: { id: "test-tweak", name: "Test tweak", version: "1.0.0", description: "Tests tweak grouping.", creator: "Tweak Maker", shareUrl: "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-tweak", category: "tweak", tags: ["Workflow"], enabledByDefault: true },
       screenshot: null,
       source: `BetterCodex.register({ id: "test-tweak", start() { document.body.dataset.tweak = "on"; }, stop() { delete document.body.dataset.tweak; } });`
     }, {
@@ -90,17 +90,21 @@ test("mounts a themed native button after Help and opens a full-page view", () =
   assert.equal(shadow.querySelector(".addons-list .plugin-preview").getAttribute("src"), "data:image/svg+xml;base64,PHN2Zy8+");
   assert.equal(shadow.querySelector("#addons .catalog-search").placeholder, "Search add-ons");
   assert.deepEqual([...shadow.querySelectorAll("#addons .plugin-tag")].map((tag) => tag.textContent), ["Productivity", "Projects"]);
+  assert.equal(shadow.querySelector("#addons .plugin-creator").textContent, "By Test Creator");
+  assert.equal(shadow.querySelector("#addons .plugin-share").getAttribute("aria-label"), "Share Test add-on");
   assert.equal(shadow.querySelector("#addons .result-count").textContent, "1 add-on");
   assert.equal(shadow.querySelector(".addons-list input[data-addon='test-tweak']"), null);
   shadow.querySelector(".nav[data-target='tweaks']").click();
   assert.equal(shadow.getElementById("addons").hidden, true);
   assert.equal(shadow.getElementById("tweaks").hidden, false);
   assert.equal(shadow.querySelector(".tweaks-list input[data-addon='test-tweak']")?.dataset.addon, "test-tweak");
+  assert.equal(shadow.querySelector("#tweaks .plugin-creator").textContent, "By Tweak Maker");
   shadow.querySelector(".nav[data-target='themes']").click();
   assert.equal(shadow.getElementById("tweaks").hidden, true);
   assert.equal(shadow.getElementById("themes").hidden, false);
   assert.equal(shadow.getElementById("bettercodex-title").textContent, "Themes");
   assert.equal(shadow.querySelector(".themes-list input[data-addon='test-theme']")?.checked, false);
+  assert.equal(shadow.querySelector("#themes .plugin-creator").textContent, "By Unknown creator");
   assert.equal(shadow.querySelector(".themes-list input[data-addon='test-addon']"), null);
   shadow.querySelector(".nav[data-target='bettercodex']").click();
   assert.equal(shadow.getElementById("bettercodex").hidden, false);
@@ -145,6 +149,48 @@ test("searches and filters catalog cards by state and tags", () => {
   shadow.querySelector("#addons [data-tag='projects']").click();
   assert.equal(addonCard.hidden, false);
   assert.equal(shadow.querySelector("#addons [data-tag='projects']").getAttribute("aria-pressed"), "true");
+  dom.window.BetterCodex.destroy();
+});
+
+test("shares catalog cards through the system share sheet", async () => {
+  let shared;
+  const { dom } = setup({
+    prepare: ({ window }) => { window.navigator.share = async (data) => { shared = data; }; }
+  });
+  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
+  const button = shadow.querySelector(".addons-list .plugin-share");
+
+  button.click();
+  await delay(0);
+
+  assert.deepEqual({ ...shared }, {
+    title: "Test add-on",
+    text: "Test add-on by Test Creator — Tests toggles.",
+    url: "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-addon"
+  });
+  assert.equal(button.textContent.trim(), "Shared");
+  assert.equal(button.disabled, false);
+  dom.window.BetterCodex.destroy();
+});
+
+test("copies a direct catalog link when system sharing is unavailable", async () => {
+  let copied;
+  const { dom } = setup({
+    prepare: ({ window }) => {
+      Object.defineProperty(window.navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async (value) => { copied = value; } }
+      });
+    }
+  });
+  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
+  const button = shadow.querySelector(".tweaks-list .plugin-share");
+
+  button.click();
+  await delay(0);
+
+  assert.equal(copied, "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-tweak");
+  assert.equal(button.textContent.trim(), "Copied");
   dom.window.BetterCodex.destroy();
 });
 
@@ -284,6 +330,8 @@ test("Generate theme prepares an unsent projectless task with category-specific 
   assert.equal(document.querySelector("[data-codex-composer]").textContent, "Add a warm, low-contrast theme for Codex.");
   assert.match(attachedRequirements, /^# BetterCodex theme requirements/);
   assert.match(attachedRequirements, /manifest category to "theme" exactly/i);
+  assert.match(attachedRequirements, /description, creator, category/);
+  assert.match(attachedRequirements, /include it as shareUrl/);
   assert.match(attachedRequirements, /Codex's existing UI as the component library/i);
   assert.match(attachedRequirements, /style native Codex and BetterCodex components in place/i);
   assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons/);

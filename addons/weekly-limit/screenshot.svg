@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280" role="img" aria-labelledby="title description">
+  <title id="title">Weekly Limit add-on preview</title>
+  <desc id="description">A dark Codex composer with a green Weekly 73 percent badge before the microphone and send buttons.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="640" y2="280" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12151B"/>
+      <stop offset="1" stop-color="#0B0D11"/>
+    </linearGradient>
+    <linearGradient id="composer" x1="90" y1="66" x2="550" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20242C"/>
+      <stop offset="1" stop-color="#171A20"/>
+    </linearGradient>
+    <filter id="shadow" x="54" y="42" width="532" height="210" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity=".32"/>
+    </filter>
+  </defs>
+  <rect width="640" height="280" rx="18" fill="url(#background)"/>
+  <circle cx="555" cy="34" r="80" fill="#64D69B" opacity=".035"/>
+  <circle cx="84" cy="244" r="104" fill="#8AA5FF" opacity=".025"/>
+  <text x="68" y="43" fill="#F1F3F5" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="650">Weekly Limit</text>
+  <text x="68" y="62" fill="#858D99" font-family="Segoe UI, Arial, sans-serif" font-size="11">Your remaining Codex usage, right where you write.</text>
+  <g filter="url(#shadow)">
+    <rect x="68" y="82" width="504" height="142" rx="20" fill="url(#composer)" stroke="#343943"/>
+  </g>
+  <text x="92" y="118" fill="#7E8793" font-family="Segoe UI, Arial, sans-serif" font-size="13">Ask Codex to build, explain, or explore…</text>
+  <line x1="90" y1="169" x2="550" y2="169" stroke="#2D323B"/>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#B8BEC7">
+    <rect x="90" y="184" width="72" height="24" rx="8" fill="#262B34"/>
+    <text x="105" y="200">5.6 Sol</text>
+    <path d="m148 194 3 3 3-3" fill="none" stroke="#89919C" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="170" y="184" width="52" height="24" rx="8" fill="#262B34"/>
+    <text x="183" y="200">High</text>
+  </g>
+  <g>
+    <rect x="397" y="184" width="88" height="24" rx="12" fill="#183B2C" stroke="#32684E"/>
+    <circle cx="412" cy="196" r="3" fill="#83D8AA"/>
+    <text x="422" y="200" fill="#9BE2BA" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650">Weekly 73%</text>
+  </g>
+  <g>
+    <path d="M506 190.5a3 3 0 0 0-3 3v3a3 3 0 0 0 6 0v-3a3 3 0 0 0-3-3Z" fill="none" stroke="#C8CED6" stroke-width="1.5"/>
+    <path d="M501 196.5a5 5 0 0 0 10 0M506 201.5v2.5" fill="none" stroke="#C8CED6" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <g>
+    <circle cx="545" cy="196" r="15" fill="#ECEFF2"/>
+    <path d="M540 197.5 545 192l5 5.5M545 192v9" fill="none" stroke="#171A20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="320" y="254" text-anchor="middle" fill="#65707B" font-family="Segoe UI, Arial, sans-serif" font-size="10">Refreshes automatically every minute</text>
+</svg>

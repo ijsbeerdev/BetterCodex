@@ -1,0 +1,12 @@
+{
+  "id": "hide-sidebar-voice",
+  "name": "Hide Sidebar Voice",
+  "version": "0.1.0",
+  "description": "Removes the Voice shortcut from Codex's bottom sidebar toolbar.",
+  "creator": "ijsbeerdev",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/hide-sidebar-voice",
+  "category": "tweak",
+  "tags": ["Sidebar", "Interface"],
+  "screenshot": "screenshot.svg",
+  "enabledByDefault": true
+}

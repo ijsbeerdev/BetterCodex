@@ -3,6 +3,8 @@
   "name": "Codex 2077",
   "version": "0.1.0",
   "description": "Turns Codex into a neon night-city interface with cyan circuits, magenta signals, and grid-lit system panels.",
+  "creator": "ijsbeerdev",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/cyberpunk-theme",
   "category": "theme",
   "tags": ["Cyberpunk", "Dark", "Neon"],
   "screenshot": "screenshot.svg",

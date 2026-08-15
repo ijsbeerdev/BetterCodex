@@ -12,13 +12,15 @@ test("loads a validated add-on catalog", async () => {
     await mkdir(addonRoot);
     await writeFile(join(addonRoot, "manifest.json"), JSON.stringify({
       id: "hello-world", name: "Hello world", version: "1.2.3", description: "A test add-on.",
-      category: "tweak", tags: ["Workflow", "Productivity"], screenshot: "screenshot.svg", enabledByDefault: true
+      creator: "Test Creator", shareUrl: "https://example.test/hello-world", category: "tweak", tags: ["Workflow", "Productivity"], screenshot: "screenshot.svg", enabledByDefault: true
     }));
     await writeFile(join(addonRoot, "index.js"), "BetterCodex.register({ id: 'hello-world' });");
     await writeFile(join(addonRoot, "screenshot.svg"), "<svg xmlns='http://www.w3.org/2000/svg'></svg>");
     const [addon] = await loadAddons(root);
     assert.equal(addon.manifest.id, "hello-world");
     assert.equal(addon.manifest.category, "tweak");
+    assert.equal(addon.manifest.creator, "Test Creator");
+    assert.equal(addon.manifest.shareUrl, "https://example.test/hello-world");
     assert.deepEqual(addon.manifest.tags, ["Workflow", "Productivity"]);
     assert.match(addon.screenshot, /^data:image\/svg\+xml;base64,/);
     assert.match(addon.source, /bettercodex-addon:\/\/hello-world/);
@@ -36,4 +38,6 @@ test("rejects invalid or mismatched manifests", () => {
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", tags: "workflow" }), /tags/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", tags: [] }), /tags/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", tags: ["Workflow", "workflow"] }), /unique/);
+  assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", creator: "" }), /creator/);
+  assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", shareUrl: "file:///tmp/one" }), /shareUrl/);
 });

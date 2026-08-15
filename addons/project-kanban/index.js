@@ -75,10 +75,11 @@
           const stored = JSON.parse(preferenceStorage.getItem(STORAGE_KEY) || "{}");
           if (stored.version !== 3 || !Array.isArray(stored.cards)) return;
           for (const item of stored.cards) {
-            if (!item || typeof item.id !== "string" || typeof item.title !== "string" || !item.native || !item.projectLinked) continue;
+            if (!item || typeof item.id !== "string" || typeof item.title !== "string" || !item.projectLinked) continue;
             const progress = normalizeText(item.progress);
             const storedProject = normalizeText(item.project);
-            if (!storedProject || typeof item.href !== "string" || !item.href) continue;
+            const native = Boolean(item.native);
+            if (!storedProject || native && (typeof item.href !== "string" || !item.href)) continue;
             state.cards.set(item.id, {
               id: item.id,
               title: normalizeText(item.title).slice(0, 240),
@@ -86,7 +87,7 @@
               status: STATUSES.includes(item.status) ? item.status : migrateStatus(item.status, progress),
               progress,
               href: typeof item.href === "string" ? item.href : "",
-              native: Boolean(item.native),
+              native,
               projectLinked: true,
               hidden: Boolean(item.hidden),
               filesChanged: parseCount(item.filesChanged),
@@ -419,6 +420,7 @@
         }
 
         for (const card of [...state.cards.values()]) {
+          if (!card.native) continue;
           if (card.native && card.projectLinked && card.href && discovered.has(card.href)) continue;
           state.cards.delete(card.id);
           if (card.href) state.nativeLinks.delete(card.href);
@@ -832,7 +834,7 @@
           const list = state.root.querySelector(`[data-bbpk-list='${status}']`);
           const count = state.root.querySelector(`[data-bbpk-count='${status}']`);
           const cards = [...state.cards.values()]
-            .filter((card) => !card.hidden && card.native && card.projectLinked && card.project && card.status === status && findNativeChatControl(card))
+            .filter((card) => !card.hidden && card.projectLinked && card.project && card.status === status && (!card.native || findNativeChatControl(card)))
             .sort((a, b) => b.updatedAt - a.updatedAt);
           list.replaceChildren();
           for (const card of cards) list.append(renderCard(card));
@@ -898,6 +900,7 @@
 
       const openBoard = () => {
         if (!state.root) return;
+        document.dispatchEvent(new CustomEvent("bettercodex:full-tab-open", { detail: { owner: "project-kanban" } }));
         state.restoreFocusTo = document.activeElement;
         scanNativeChats();
         renderBoard();
@@ -1025,6 +1028,43 @@
       };
 
       loadCards();
+      document.addEventListener("bettercodex:project-kanban-create-cards", (event) => {
+        const detail = event.detail || {};
+        const project = normalizeText(detail.project);
+        const titles = Array.isArray(detail.titles)
+          ? [...new Set(detail.titles.map((title) => normalizeText(title).slice(0, 240)).filter(Boolean))].slice(0, 30)
+          : [];
+        if (!project || !titles.length) {
+          detail.respond?.([]);
+          return;
+        }
+        const created = titles.map((title, index) => {
+          const card = {
+            id: `plan:${Date.now().toString(36)}:${index}:${Math.random().toString(36).slice(2, 8)}`,
+            title,
+            project,
+            status: "old",
+            progress: "Ready to run",
+            href: "",
+            native: false,
+            projectLinked: true,
+            hidden: false,
+            filesChanged: 0,
+            additions: 0,
+            deletions: 0,
+            activityLabel: "",
+            updatedAt: Date.now() + index
+          };
+          state.cards.set(card.id, card);
+          return card;
+        });
+        saveCards();
+        if (state.root && !state.root.hidden) renderBoard();
+        detail.respond?.(created.map((card) => ({ id: card.id, title: card.title, project: card.project })));
+      }, { signal: state.abortController.signal });
+      document.addEventListener("bettercodex:full-tab-open", (event) => {
+        if (event.detail?.owner !== "project-kanban") closeBoard({ restoreFocus: false });
+      }, { signal: state.abortController.signal });
       window.addEventListener("popstate", () => closeBoard({ restoreFocus: false }), { signal: state.abortController.signal });
       document.addEventListener("click", (event) => {
         if (state.forwardingNativeMenuClick) return;
@@ -1034,7 +1074,7 @@
       }, { capture: true, signal: state.abortController.signal });
       state.observer = new MutationObserver((records) => {
         if (records.some((record) => {
-          if (record.target instanceof Element && record.target.closest(`[${ROOT_ATTRIBUTE}], [${LAUNCHER_ATTRIBUTE}]`)) return false;
+          if (record.target instanceof Element && record.target.closest(`[${ROOT_ATTRIBUTE}], [${LAUNCHER_ATTRIBUTE}], [data-bettercodex-project-workspace-root]`)) return false;
           if (record.type === "attributes") return record.target instanceof Element;
           return [...record.addedNodes, ...record.removedNodes].some((node) => node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE);
         })) scheduleSync();

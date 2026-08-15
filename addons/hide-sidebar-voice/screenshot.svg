@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Hide Sidebar Voice tweak</title>
+  <desc id="desc">The bottom Codex sidebar toolbar with the Voice shortcut removed while Help and BetterCodex remain available.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#151517"/>
+      <stop offset="1" stop-color="#0d0d0f"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="24" fill="url(#background)"/>
+  <rect x="28" y="26" width="262" height="308" rx="16" fill="#09090b" stroke="#29292d"/>
+  <circle cx="56" cy="57" r="12" fill="#d7f5ff"/>
+  <path d="M51 57h10M56 52v10" stroke="#3798b3" stroke-width="2" stroke-linecap="round"/>
+  <text x="78" y="63" fill="#f5f5f7" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600">ijsbeer</text>
+  <rect x="44" y="90" width="230" height="1" fill="#202024"/>
+  <rect x="44" y="112" width="178" height="10" rx="5" fill="#242429"/>
+  <rect x="44" y="138" width="204" height="10" rx="5" fill="#1d1d21"/>
+  <rect x="44" y="164" width="150" height="10" rx="5" fill="#1d1d21"/>
+  <path d="M28 278h262v40a16 16 0 0 1-16 16H44a16 16 0 0 1-16-16z" fill="#0b0b0d"/>
+  <line x1="28" y1="278" x2="290" y2="278" stroke="#29292d"/>
+  <circle cx="224" cy="306" r="13" fill="#151519" stroke="#36363c"/>
+  <text x="220" y="311" fill="#d7d7dc" font-family="Segoe UI, sans-serif" font-size="15">?</text>
+  <rect x="248" y="293" width="28" height="27" rx="8" fill="#151519" stroke="#36363c"/>
+  <path d="M255 302h14v10h-14zM258 299v3M266 299v3M258 306h.1M266 306h.1" stroke="#e9e9ed" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <rect x="326" y="70" width="284" height="220" rx="18" fill="#17171a" stroke="#303035"/>
+  <text x="354" y="112" fill="#a9f0d0" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">SIDEBAR TWEAK</text>
+  <text x="354" y="153" fill="#f4f4f6" font-family="Segoe UI, sans-serif" font-size="27" font-weight="650">A little more quiet.</text>
+  <text x="354" y="187" fill="#aaaab2" font-family="Segoe UI, sans-serif" font-size="15">Voice is tucked away.</text>
+  <text x="354" y="212" fill="#aaaab2" font-family="Segoe UI, sans-serif" font-size="15">Help and BetterCodex stay put.</text>
+  <rect x="354" y="242" width="112" height="28" rx="14" fill="#19352b" stroke="#2c7257"/>
+  <circle cx="372" cy="256" r="5" fill="#7ae1b4"/>
+  <text x="386" y="261" fill="#baf2da" font-family="Segoe UI, sans-serif" font-size="13">Enabled</text>
+</svg>

@@ -3,6 +3,8 @@
   "name": "Kanban",
   "version": "0.3.0",
   "description": "Groups Codex tasks by live activity, approval state, completion, and code-change totals.",
+  "creator": "ijsbeerdev",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/project-kanban",
   "category": "addon",
   "tags": ["Projects", "Productivity"],
   "screenshot": "screenshot.svg",

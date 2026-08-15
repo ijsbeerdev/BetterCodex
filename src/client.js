@@ -13,6 +13,7 @@
   const TWEAK_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 21v-7"></path><path d="M4 10V3"></path><path d="M12 21v-9"></path><path d="M12 8V3"></path><path d="M20 21v-5"></path><path d="M20 12V3"></path><path d="M1 14h6"></path><path d="M9 8h6"></path><path d="M17 16h6"></path></svg>`;
   const BRUSH_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"></path></svg>`;
   const SEARCH_ICON = `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="4.25"></circle><path d="m10.25 10.25 3 3"></path></svg>`;
+  const SHARE_ICON = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12.25" cy="3.25" r="1.75"></circle><circle cx="3.75" cy="8" r="1.75"></circle><circle cx="12.25" cy="12.75" r="1.75"></circle><path d="m5.3 7.15 5.4-3.05M5.3 8.85l5.4 3.05"></path></svg>`;
 
   function install(payload) {
     globalThis.BetterCodex?.destroy?.();
@@ -246,10 +247,18 @@
         .plugin-heading { display:flex; align-items:baseline; gap:10px; }
         .plugin-heading .name { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .plugin-body .description { min-height:34px; }
+        .plugin-creator { margin-top:4px; color:var(--bb-muted); font-size:11px; line-height:16px; }
         .plugin-meta { min-height:24px; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; }
         .plugin-tags { min-width:0; display:flex; flex-wrap:wrap; gap:5px; }
         .plugin-tag { padding:2px 7px; border:1px solid var(--bb-border); border-radius:999px; color:var(--bb-muted);
           background:var(--bb-hover); font-size:11px; line-height:16px; }
+        .plugin-actions { flex:none; display:flex; align-items:center; gap:8px; }
+        .plugin-share { height:26px; display:flex; align-items:center; gap:5px; padding:3px 8px; border:1px solid var(--bb-border);
+          border-radius:7px; color:var(--bb-muted); background:transparent; cursor:pointer; font-size:11px; line-height:16px; }
+        .plugin-share:hover { color:var(--bb-text); background:var(--bb-hover); }
+        .plugin-share:focus-visible { outline:2px solid rgba(22,136,232,.55); outline-offset:2px; }
+        .plugin-share:disabled { opacity:.62; cursor:default; }
+        .plugin-share svg { width:14px; height:14px; flex:none; }
         .switch { position:relative; width:36px; height:20px; flex:0 0 auto; }
         .switch input { position:absolute; opacity:0; pointer-events:none; }
         .track { position:absolute; inset:0; border-radius:99px; background:#555; cursor:pointer; transition:.15s; }
@@ -303,29 +312,86 @@
     const tweakList = shadow.querySelector(".tweaks-list");
     const themeList = shadow.querySelector(".themes-list");
     const refreshFilters = new Map();
+    const getCreator = (manifest) => typeof manifest.creator === "string" && manifest.creator.trim()
+      ? manifest.creator.trim()
+      : "Unknown creator";
+    const getShareUrl = (manifest) => typeof manifest.shareUrl === "string" && /^https?:\/\//i.test(manifest.shareUrl.trim())
+      ? manifest.shareUrl.trim()
+      : "";
+    const copyShareUrl = async (value) => {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      textarea.setAttribute("readonly", "");
+      textarea.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+      document.body.append(textarea);
+      textarea.select();
+      const copied = document.execCommand?.("copy");
+      textarea.remove();
+      if (!copied) throw new Error("Clipboard is unavailable");
+    };
+    const shareAddon = async (addon) => {
+      const creator = getCreator(addon.manifest);
+      const url = getShareUrl(addon.manifest);
+      const shareData = {
+        title: addon.manifest.name,
+        text: `${addon.manifest.name} by ${creator} — ${addon.manifest.description}`,
+        ...(url ? { url } : {})
+      };
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share(shareData);
+          return "shared";
+        } catch (error) {
+          if (error?.name === "AbortError") return "cancelled";
+        }
+      }
+      await copyShareUrl(url || shareData.text);
+      return "copied";
+    };
     for (const addon of payload.addons) {
       const card = document.createElement("article");
       card.className = "plugin-card";
       card.dataset.catalogItem = addon.manifest.id;
       const tags = Array.isArray(addon.manifest.tags) ? addon.manifest.tags.map((tag) => tag.trim()).filter(Boolean) : [];
+      const creator = getCreator(addon.manifest);
       card.dataset.tags = tags.map((tag) => tag.toLocaleLowerCase()).join("|");
-      card.dataset.search = [addon.manifest.id, addon.manifest.name, addon.manifest.description, ...tags].join(" ").toLocaleLowerCase();
+      card.dataset.search = [addon.manifest.id, addon.manifest.name, addon.manifest.description, creator, ...tags].join(" ").toLocaleLowerCase();
       const preview = addon.screenshot
         ? `<img class="plugin-preview" src="${escapeAttribute(addon.screenshot)}" alt="${escapeAttribute(addon.manifest.name)} screenshot">`
         : `<div class="plugin-preview plugin-preview-fallback">${BETTERCODEX_ICON}</div>`;
       card.innerHTML = `${preview}<div class="plugin-body"><div class="plugin-heading">
         <div class="name">${escapeHtml(addon.manifest.name)}</div><div class="version">v${escapeHtml(addon.manifest.version)}</div></div>
         <div class="description">${escapeHtml(addon.manifest.description)}</div>
+        <div class="plugin-creator">By ${escapeHtml(creator)}</div>
         <div class="plugin-meta"><div class="plugin-tags" aria-label="Tags">${tags.map((tag) => `<span class="plugin-tag">${escapeHtml(tag)}</span>`).join("")}</div>
-          <label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
-          <span class="track"></span></label></div></div>`;
+          <div class="plugin-actions"><button class="plugin-share" type="button" aria-label="Share ${escapeAttribute(addon.manifest.name)}">${SHARE_ICON}<span>Share</span></button>
+            <label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
+            <span class="track"></span></label></div></div></div>`;
       const input = card.querySelector("input");
+      const shareButton = card.querySelector(".plugin-share");
       input.checked = isEnabled(addon.manifest.id);
       const list = addon.manifest.category === "theme" ? themeList : addon.manifest.category === "tweak" ? tweakList : addonList;
       input.addEventListener("change", () => {
         input.checked = api.setEnabled(addon.manifest.id, input.checked);
         refreshFilters.get(list)?.();
       });
+      shareButton.addEventListener("click", async () => {
+        const label = shareButton.querySelector("span");
+        shareButton.disabled = true;
+        try {
+          const result = await shareAddon(addon);
+          if (result !== "cancelled") label.textContent = result === "shared" ? "Shared" : "Copied";
+        } catch (error) {
+          console.error(`[BetterCodex] Could not share ${addon.manifest.id}`, error);
+          label.textContent = "Unavailable";
+        } finally {
+          shareButton.disabled = false;
+        }
+      }, { signal: controller.signal });
       list.append(card);
     }
 
@@ -533,7 +599,7 @@
         `BetterCodex is a runtime patcher for the official ChatGPT Codex Windows app. Work only inside the target add-ons directory. Do not create a standalone app, Codex marketplace plugin, skill, MCP server, or browser extension. Do not modify Codex executables, signed MSIX files, app.asar, update settings, launcher behavior, or BetterCodex core unless the user explicitly asks for a core change. Never copy or redistribute Codex source bundles.\n\n` +
         `## ${kind.section} contract and structure\n\n` +
         `This entry belongs in BetterCodex ${kind.section}; set manifest category to \"${category}\" exactly. An add-on is a distinct feature or workflow, a tweak is one focused improvement to existing behavior, and a theme is an app-wide visual treatment that does not replace product behavior. Inspect the current sibling entries in this category first, then read every file and focused test for the closest similar entry. Follow those current conventions. Create exactly one <kebab-case-id> directory directly under the target add-ons directory. It must contain manifest.json, index.js, and screenshot.svg. Do not add dependencies or a build step unless the requested feature cannot reasonably work without them. Keep the entry self-contained.\n\n` +
-        `manifest.json must contain id, name, version, description, category, tags, screenshot, and enabledByDefault. Category must remain \"${category}\". Add 1 to 3 short, useful tags that match terminology used by related BetterCodex entries and help people search and filter the catalog. The id must exactly match the directory name and the id passed to BetterCodex.register. Start at version 0.1.0. Set screenshot to screenshot.svg. Write short, friendly copy suitable for the BetterCodex ${kind.section} page. Themes are opt-in and must set enabledByDefault to false unless the user explicitly requires otherwise; tweaks and add-ons should use the safest sensible first-run state.\n\n` +
+        `manifest.json must contain id, name, version, description, creator, category, tags, screenshot, and enabledByDefault. Category must remain \"${category}\". Set creator to the creator's concise public display name when the user provides one; otherwise use \"Local creator\" without guessing their identity. If the entry already has a public HTTP or HTTPS page, include it as shareUrl; otherwise omit shareUrl. Add 1 to 3 short, useful tags that match terminology used by related BetterCodex entries and help people search and filter the catalog. The id must exactly match the directory name and the id passed to BetterCodex.register. Start at version 0.1.0. Set screenshot to screenshot.svg. Write short, friendly copy suitable for the BetterCodex ${kind.section} page. Themes are opt-in and must set enabledByDefault to false unless the user explicitly requires otherwise; tweaks and add-ons should use the safest sensible first-run state.\n\n` +
         `index.js runs as classic browser JavaScript inside the Codex renderer. It has no imports, require(), module system, package dependencies, or Node.js APIs. Register it with BetterCodex.register({ id, start, stop }). start() must be idempotent even if BetterCodex hot-reloads it repeatedly. stop() must fully reverse the add-on: disconnect MutationObservers, clear timers, remove event listeners and injected DOM/style nodes, and restore every native node or attribute it changed. Keep state private to the add-on and use stable data attributes for anything injected. Store persistent add-on preferences with BetterCodex.storage using a key that begins with bettercodex so they survive Codex updates and BetterCodex reinstallations.\n\n` +
         `Treat Codex's DOM as private and updateable. Prefer semantic attributes, accessible labels, and narrow structural checks over generated class names. Observe the smallest practical root, debounce or batch repeated scans, avoid polling when a MutationObserver works, and fail quietly if the expected UI is absent. Preserve native keyboard, focus, scrolling, approval, composer, and navigation behavior. Reuse Codex's visual language and CSS variables where available; support both light and dark themes.\n\n` +
         `Treat Codex's existing UI as the component library. Before creating a button, menu, input, dialog, panel, row, badge, tooltip, or navigation item, inspect the nearby native equivalent and reuse the native element or existing surface when feasible. Prefer inserting into a native container, exposing an existing control, or adapting the same semantic structure over building a parallel custom component. Do not introduce a component framework, custom design system, custom modal shell, or web-component layer. When a new control is essential, match the neighboring native component's element type, accessible name, icon sizing, focus behavior, disabled state, hover and pressed states, spacing, and theme variables. A theme must style native Codex and BetterCodex components in place; a tweak should usually alter a native behavior or component; an add-on may compose native components into a larger workflow only when the requested feature needs it.\n\n` +

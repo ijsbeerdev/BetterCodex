@@ -3,6 +3,8 @@
   "name": "Thinking Mode Colors",
   "version": "0.1.0",
   "description": "Gives every thinking level its own easy-to-spot color in the composer and picker.",
+  "creator": "ijsbeerdev",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/thinking-mode-colors",
   "category": "tweak",
   "tags": ["Composer", "Accessibility"],
   "screenshot": "screenshot.svg",

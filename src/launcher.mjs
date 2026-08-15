@@ -3,7 +3,7 @@ import { access, appendFile, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { injectTarget, replaceInjection, updatePersistentInjection } from "./cdp.mjs";
+import { getDebuggerTargets, injectTarget, isCodexAppTarget, replaceInjection, scopeExpressionToCodexApp, updatePersistentInjection } from "./cdp.mjs";
 import { loadAddons } from "./catalog.mjs";
 import { reloadRenderers, watchAddons } from "./hot-reload.mjs";
 import { createPreferencesStore, installPreferencesBridge } from "./preferences.mjs";
@@ -39,7 +39,7 @@ async function createExpression() {
   const addons = await loadAddons(addonsRoot);
   const preferences = await preferencesStore.load();
   const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons, preferences };
-  return `${clientSource}\n;globalThis.__BETTERCODEX_INJECT__(${JSON.stringify(payload)});`;
+  return scopeExpressionToCodexApp(`${clientSource}\n;globalThis.__BETTERCODEX_INJECT__(${JSON.stringify(payload)});`);
 }
 
 let currentExpression = await createExpression();
@@ -61,7 +61,9 @@ function resolveCodexExecutable() {
 }
 
 function codexIsRunning() {
-  try { return powershell("[bool](Get-Process ChatGPT -ErrorAction SilentlyContinue)") === "True"; }
+  try {
+    return powershell("[bool](Get-CimInstance Win32_Process -Filter \"Name = 'ChatGPT.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1)") === "True";
+  }
   catch { return false; }
 }
 
@@ -77,9 +79,7 @@ function showMessage(message, title = "BetterCodex") {
 }
 
 async function getTargets() {
-  const response = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1_000) });
-  if (!response.ok) throw new Error(`Debugger returned ${response.status}`);
-  return response.json();
+  return getDebuggerTargets(port);
 }
 
 async function waitForDebugger() {
@@ -107,9 +107,10 @@ async function main() {
     child = spawn(executable, [
       `--remote-debugging-port=${port}`,
       "--remote-debugging-address=127.0.0.1",
-      "--remote-allow-origins=http://127.0.0.1"
+      "--remote-allow-origins=http://127.0.0.1,http://localhost"
     ], { detached: false, stdio: "ignore" });
     child.once("exit", () => { childExited = true; });
+    child.unref();
     targets = await waitForDebugger();
   }
 
@@ -151,7 +152,7 @@ async function main() {
       targets = await getTargets();
       failures = 0;
       for (const target of targets) {
-        if (!target.webSocketDebuggerUrl || !["page", "webview"].includes(target.type) || target.url?.startsWith("devtools://")) continue;
+        if (!isCodexAppTarget(target)) continue;
         if (!sessions.has(target.id)) {
           try {
             sessions.set(target.id, await injectTarget(target, currentExpression, async (connection) => {

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-labelledby="title desc">
+  <title id="title">Workspace documentation inside Codex</title>
+  <desc id="desc">The Codex sidebar sits beside a native project page tree and a clean architecture document with headings, file references, code, and Codex context controls.</desc>
+  <rect width="640" height="320" rx="18" fill="#111112"/>
+  <rect width="142" height="320" rx="18" fill="#1b1b1d"/>
+  <path d="M142 0v320" stroke="#303034"/>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <g transform="translate(14 17)">
+      <text x="0" y="14" fill="#f1f1f2" font-size="12" font-weight="650">Codex⌄</text>
+      <g transform="translate(0 34)" fill="#c5c5c8" font-size="9.5">
+        <path d="M3 2.5h8M7 0v5" stroke="#c5c5c8" stroke-width="1.1" stroke-linecap="round"/>
+        <text x="18" y="6">New chat</text>
+      </g>
+      <g transform="translate(-6 53)">
+        <rect width="122" height="28" rx="8" fill="#353537"/>
+        <path d="M11 7.5h11v13H11zM14 10.5h5M14 13.5h5M14 16.5h3" fill="none" stroke="#f1f1f2" stroke-width="1" stroke-linecap="round"/>
+        <text x="32" y="18" fill="#f6f6f7" font-size="9.5">Workspace</text>
+      </g>
+      <text x="0" y="108" fill="#77777d" font-size="8" font-weight="650">PROJECTS</text>
+      <text x="0" y="130" fill="#d0d0d2" font-size="9.5">▱ bettercodex</text>
+      <text x="16" y="150" fill="#b7b7bc" font-size="8.5">Build workspace</text>
+      <text x="16" y="170" fill="#b7b7bc" font-size="8.5">Document APIs</text>
+      <circle cx="7" cy="285" r="7" fill="#25374a"/>
+      <text x="18" y="288" fill="#eeeeef" font-size="8.5">bettercodex</text>
+    </g>
+
+    <g transform="translate(142 0)">
+      <rect width="154" height="320" fill="#171718"/>
+      <path d="M154 0v320" stroke="#303034"/>
+      <text x="16" y="25" fill="#f0f0f1" font-size="10.5" font-weight="650">Workspace</text>
+      <text x="16" y="40" fill="#74747a" font-size="7.5">bettercodex</text>
+      <rect x="12" y="53" width="130" height="26" rx="7" fill="#222224" stroke="#303034"/>
+      <circle cx="24" cy="65" r="3.6" fill="none" stroke="#96969b" stroke-width="1"/>
+      <path d="m27 68 3 3" stroke="#96969b" stroke-width="1"/>
+      <text x="35" y="69" fill="#99999e" font-size="8.5">Search pages</text>
+      <text x="16" y="101" fill="#737379" font-size="7.5" font-weight="650">FAVORITES</text>
+      <text x="17" y="121" fill="#d4d4d7" font-size="8.5">★  Project Overview</text>
+      <text x="16" y="149" fill="#737379" font-size="7.5" font-weight="650">PAGES</text>
+      <text x="17" y="169" fill="#dadadd" font-size="8.5">▾  📁  Project</text>
+      <rect x="12" y="178" width="130" height="24" rx="7" fill="#2b2b2e"/>
+      <text x="34" y="194" fill="#f3f3f4" font-size="8.5">📄  Architecture</text>
+      <text x="34" y="217" fill="#bebec2" font-size="8.5">☑  TODO</text>
+      <text x="34" y="240" fill="#bebec2" font-size="8.5">▾  📚  Documentation</text>
+      <text x="51" y="263" fill="#a9a9ae" font-size="8.5">📄  API</text>
+      <text x="17" y="295" fill="#a9a9ae" font-size="8.5">＋  New page</text>
+    </g>
+
+    <g transform="translate(296 0)">
+      <text x="22" y="25" fill="#88888e" font-size="7.5">Project  /  Architecture</text>
+      <rect x="237" y="12" width="83" height="24" rx="7" fill="#232325" stroke="#343438"/>
+      <text x="278.5" y="27.5" text-anchor="middle" fill="#d9d9dc" font-size="7.5">＋ Add to context</text>
+      <g transform="translate(40 61)">
+        <text x="0" y="16" font-size="17">🏗️</text>
+        <text x="0" y="52" fill="#f4f4f5" font-size="22" font-weight="700">Project Architecture</text>
+        <text x="0" y="80" fill="#c4c4c8" font-size="9.5">BetterCodex patches the official Codex renderer at runtime.</text>
+        <text x="0" y="111" fill="#eeeeef" font-size="13" font-weight="650">Frontend</text>
+        <rect x="0" y="124" width="126" height="22" rx="5" fill="#222225"/>
+        <text x="9" y="138.5" fill="#b7cee8" font-size="8">@file  src/client.js</text>
+        <text x="0" y="171" fill="#eeeeef" font-size="13" font-weight="650">Add-on lifecycle</text>
+        <rect x="0" y="184" width="242" height="73" rx="8" fill="#19191b" stroke="#303034"/>
+        <text x="12" y="201" fill="#77777e" font-size="7">JAVASCRIPT</text>
+        <text x="12" y="220" fill="#c792ea" font-size="8">BetterCodex</text><text x="61" y="220" fill="#d7d7da" font-size="8">.register({</text>
+        <text x="22" y="235" fill="#82aaff" font-size="8">start</text><text x="47" y="235" fill="#d7d7da" font-size="8">() { mountWorkspace(); },</text>
+        <text x="22" y="250" fill="#82aaff" font-size="8">stop</text><text x="44" y="250" fill="#d7d7da" font-size="8">() { cleanup(); }</text>
+        <text x="0" y="286" fill="#76767c" font-size="8.5">Type '/' for commands…</text>
+      </g>
+    </g>
+  </g>
+</svg>
