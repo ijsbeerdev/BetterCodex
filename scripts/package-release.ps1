@@ -1,15 +1,20 @@
 [CmdletBinding()]
 param(
-    [string]$NodeArchivePath
+    [string]$NodeArchivePath,
+    [string]$InnoCompilerPath,
+    [string]$InnoSignToolName
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $packageInfo = Get-Content -LiteralPath (Join-Path $repoRoot "package.json") -Raw | ConvertFrom-Json
-$version = $packageInfo.version
+$version = [string]$packageInfo.version
+$numericVersionParts = @($version.Split('-')[0].Split('.'))
+while ($numericVersionParts.Count -lt 4) { $numericVersionParts += "0" }
+$numericVersion = ($numericVersionParts | Select-Object -First 4) -join "."
 $releaseRoot = Join-Path $repoRoot "release"
-$stageRoot = Join-Path $releaseRoot "BetterCodex-$version"
-$zipPath = Join-Path $releaseRoot "bettercodex-$version-windows-x64.zip"
+$stageRoot = Join-Path $releaseRoot "BetterCodex-$version-setup"
+$setupPath = Join-Path $releaseRoot "bettercodex-$version-windows-x64-setup.exe"
 $cacheRoot = Join-Path $repoRoot ".bettercodex-cache"
 $nodeVersion = "24.13.1"
 $nodeArchiveName = "node-v$nodeVersion-win-x64.zip"
@@ -34,8 +39,25 @@ function Get-Sha256([string]$path) {
     }
 }
 
+function Resolve-InnoCompiler([string]$requestedPath) {
+    if ($requestedPath) { return (Resolve-Path -LiteralPath $requestedPath).Path }
+    $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    foreach ($candidate in @(
+        (Join-Path $cacheRoot "inno-7\ISCC.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 7\ISCC.exe"),
+        (Join-Path $env:ProgramFiles "Inno Setup 7\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
+        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
+    )) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
+    }
+    throw "Inno Setup was not found. Install it or pass -InnoCompilerPath to build the release installer."
+}
+
 Assert-ChildPath $stageRoot $repoRoot
-Assert-ChildPath $zipPath $repoRoot
+Assert-ChildPath $setupPath $repoRoot
 Assert-ChildPath $cacheRoot $repoRoot
 
 $node = (Get-Command node -ErrorAction Stop).Source
@@ -44,12 +66,10 @@ if ($LASTEXITCODE -ne 0) { throw "BetterCodex release build failed." }
 
 New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
-if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
-New-Item -ItemType Directory -Path $stageRoot -Force | Out-Null
+if (Test-Path -LiteralPath $setupPath) { Remove-Item -LiteralPath $setupPath -Force }
 New-Item -ItemType Directory -Path (Join-Path $stageRoot "runtime") -Force | Out-Null
 Copy-Item -Path (Join-Path $repoRoot "dist\*") -Destination (Join-Path $stageRoot "runtime") -Recurse -Force
-Copy-Item -Path (Join-Path $repoRoot "installer\*") -Destination $stageRoot -Recurse -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination (Join-Path $stageRoot "README.md")
+Copy-Item -LiteralPath (Join-Path $repoRoot "installer\Install-Actions.ps1") -Destination $stageRoot
 
 New-Item -ItemType Directory -Path $cacheRoot -Force | Out-Null
 if (-not $NodeArchivePath) {
@@ -75,9 +95,24 @@ New-Item -ItemType Directory -Path $bundledNodeRoot -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $nodeDistribution "node.exe") -Destination (Join-Path $bundledNodeRoot "node.exe")
 Copy-Item -LiteralPath (Join-Path $nodeDistribution "LICENSE") -Destination (Join-Path $bundledNodeRoot "LICENSE")
 
-Compress-Archive -Path (Join-Path $stageRoot "*") -DestinationPath $zipPath -CompressionLevel Optimal
-$zip = Get-Item -LiteralPath $zipPath
-$zipHash = Get-Sha256 $zipPath
-Write-Host "Packaged $($zip.FullName)"
-Write-Host "Size: $($zip.Length) bytes"
-Write-Host "SHA256: $zipHash"
+$compiler = Resolve-InnoCompiler $InnoCompilerPath
+$arguments = @(
+    "/DAppVersion=$version",
+    "/DAppNumericVersion=$numericVersion",
+    "/DStageRoot=$stageRoot",
+    "/DOutputDir=$releaseRoot"
+)
+if ($InnoSignToolName) { $arguments += "/DSignToolName=$InnoSignToolName" }
+$arguments += (Join-Path $repoRoot "installer\BetterCodex.iss")
+& $compiler @arguments
+if ($LASTEXITCODE -ne 0) { throw "BetterCodex setup compilation failed." }
+if (-not (Test-Path -LiteralPath $setupPath)) { throw "The expected setup executable was not created at $setupPath." }
+
+$setup = Get-Item -LiteralPath $setupPath
+$setupHash = Get-Sha256 $setupPath
+$checksumPath = "$setupPath.sha256"
+Set-Content -LiteralPath $checksumPath -Encoding ASCII -Value "$setupHash *$($setup.Name)"
+Write-Host "Packaged $($setup.FullName)"
+Write-Host "Size: $($setup.Length) bytes"
+Write-Host "SHA256: $setupHash"
+Write-Host "Checksum: $checksumPath"

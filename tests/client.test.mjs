@@ -91,7 +91,7 @@ test("mounts a themed native button after Help and opens a full-page view", () =
   assert.equal(shadow.querySelector("#addons .catalog-search").placeholder, "Search add-ons");
   assert.deepEqual([...shadow.querySelectorAll("#addons .plugin-tag")].map((tag) => tag.textContent), ["Productivity", "Projects"]);
   assert.equal(shadow.querySelector("#addons .plugin-creator").textContent, "By Test Creator");
-  assert.equal(shadow.querySelector("#addons .plugin-share").getAttribute("aria-label"), "Share Test add-on");
+  assert.equal(shadow.querySelector("#addons .plugin-share"), null);
   assert.equal(shadow.querySelector("#addons .result-count").textContent, "1 add-on");
   assert.equal(shadow.querySelector(".addons-list input[data-addon='test-tweak']"), null);
   shadow.querySelector(".nav[data-target='tweaks']").click();
@@ -99,12 +99,14 @@ test("mounts a themed native button after Help and opens a full-page view", () =
   assert.equal(shadow.getElementById("tweaks").hidden, false);
   assert.equal(shadow.querySelector(".tweaks-list input[data-addon='test-tweak']")?.dataset.addon, "test-tweak");
   assert.equal(shadow.querySelector("#tweaks .plugin-creator").textContent, "By Tweak Maker");
+  assert.equal(shadow.querySelector("#tweaks .plugin-share"), null);
   shadow.querySelector(".nav[data-target='themes']").click();
   assert.equal(shadow.getElementById("tweaks").hidden, true);
   assert.equal(shadow.getElementById("themes").hidden, false);
   assert.equal(shadow.getElementById("bettercodex-title").textContent, "Themes");
   assert.equal(shadow.querySelector(".themes-list input[data-addon='test-theme']")?.checked, false);
   assert.equal(shadow.querySelector("#themes .plugin-creator").textContent, "By Unknown creator");
+  assert.equal(shadow.querySelector("#themes .plugin-share"), null);
   assert.equal(shadow.querySelector(".themes-list input[data-addon='test-addon']"), null);
   shadow.querySelector(".nav[data-target='bettercodex']").click();
   assert.equal(shadow.getElementById("bettercodex").hidden, false);
@@ -175,48 +177,6 @@ test("searches and filters catalog cards by state and tags", () => {
   shadow.querySelector("#addons [data-tag='projects']").click();
   assert.equal(addonCard.hidden, false);
   assert.equal(shadow.querySelector("#addons [data-tag='projects']").getAttribute("aria-pressed"), "true");
-  dom.window.BetterCodex.destroy();
-});
-
-test("shares catalog cards through the system share sheet", async () => {
-  let shared;
-  const { dom } = setup({
-    prepare: ({ window }) => { window.navigator.share = async (data) => { shared = data; }; }
-  });
-  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
-  const button = shadow.querySelector(".addons-list .plugin-share");
-
-  button.click();
-  await delay(0);
-
-  assert.deepEqual({ ...shared }, {
-    title: "Test add-on",
-    text: "Test add-on by Test Creator — Tests toggles.",
-    url: "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-addon"
-  });
-  assert.equal(button.textContent.trim(), "Shared");
-  assert.equal(button.disabled, false);
-  dom.window.BetterCodex.destroy();
-});
-
-test("copies a direct catalog link when system sharing is unavailable", async () => {
-  let copied;
-  const { dom } = setup({
-    prepare: ({ window }) => {
-      Object.defineProperty(window.navigator, "clipboard", {
-        configurable: true,
-        value: { writeText: async (value) => { copied = value; } }
-      });
-    }
-  });
-  const shadow = dom.window.document.getElementById("bettercodex-client-root").shadowRoot;
-  const button = shadow.querySelector(".tweaks-list .plugin-share");
-
-  button.click();
-  await delay(0);
-
-  assert.equal(copied, "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-tweak");
-  assert.equal(button.textContent.trim(), "Copied");
   dom.window.BetterCodex.destroy();
 });
 

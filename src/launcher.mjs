@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { access, appendFile, readFile } from "node:fs/promises";
+import { access, appendFile, mkdir, readFile, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,11 @@ const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
 const port = Number(process.env.BETTERCODEX_DEBUG_PORT || 11983);
 const profileRoot = process.env.APPDATA || join(homedir(), "AppData", "Roaming");
+const localProfileRoot = process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
+const dataRoot = join(localProfileRoot, "BetterCodex");
+const logRoot = join(dataRoot, "Logs");
+const logPath = join(logRoot, "bettercodex.log");
+const launchRequestPath = join(dataRoot, "launch-request.json");
 const preferencesStore = createPreferencesStore(join(profileRoot, "BetterCodex", "preferences.json"));
 async function resolveAddonsRoot() {
   const developmentRoot = packageInfo.developmentAddonsPath;
@@ -46,7 +51,30 @@ let currentExpression = await createExpression();
 
 async function log(message) {
   const line = `${new Date().toISOString()} [launcher] ${message}\n`;
-  try { await appendFile(join(runtimeRoot, "bettercodex.log"), line); } catch {}
+  try {
+    await mkdir(logRoot, { recursive: true });
+    await appendFile(logPath, line);
+  } catch {}
+}
+
+async function takeLaunchArguments() {
+  try {
+    const request = JSON.parse(await readFile(launchRequestPath, "utf8"));
+    await unlink(launchRequestPath).catch(() => {});
+    const age = Date.now() - Date.parse(request.createdAt);
+    if (!Number.isFinite(age) || age < -5_000 || age > 30_000 || !Array.isArray(request.arguments)) return [];
+    const safe = [];
+    let skipNext = false;
+    for (const value of request.arguments) {
+      if (skipNext) { skipNext = false; continue; }
+      if (typeof value !== "string" || value.includes("\0")) continue;
+      if (/^--remote-debugging-(?:port|address)$/.test(value)) { skipNext = true; continue; }
+      if (/^--remote-(?:debugging-port|debugging-address|allow-origins)=/.test(value)) continue;
+      if (/^--type(?:=|$)/.test(value)) continue;
+      safe.push(value);
+    }
+    return safe;
+  } catch { return []; }
 }
 
 function powershell(script) {
@@ -60,9 +88,10 @@ function resolveCodexExecutable() {
   return join(installLocation, "app", "ChatGPT.exe");
 }
 
-function codexIsRunning() {
+function codexIsRunning(executable) {
+  const encoded = Buffer.from(executable, "utf16le").toString("base64");
   try {
-    return powershell("[bool](Get-CimInstance Win32_Process -Filter \"Name = 'ChatGPT.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1)") === "True";
+    return powershell(`$p=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encoded}')); [bool](Get-CimInstance Win32_Process -Filter \"Name = 'ChatGPT.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.ExecutablePath -eq $p -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1)`) === "True";
   }
   catch { return false; }
 }
@@ -83,10 +112,16 @@ async function getTargets() {
 }
 
 async function waitForDebugger() {
+  let endpointOccupied = false;
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    try { return await getTargets(); } catch {}
+    try {
+      const targets = await getTargets();
+      if (targets.some(isCodexAppTarget)) return targets;
+      endpointOccupied = true;
+    } catch {}
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
+  if (endpointOccupied) throw new Error(`Debugger port ${port} is already in use by another application.`);
   throw new Error("Codex did not expose its renderer in time.");
 }
 
@@ -95,16 +130,21 @@ async function main() {
   let targets;
   let child;
   let childExited = false;
-  try { targets = await getTargets(); }
+  try {
+    targets = await getTargets();
+    if (!targets.some(isCodexAppTarget)) throw new Error("The debugger endpoint does not belong to Codex.");
+  }
   catch {
-    if (codexIsRunning()) {
+    const executable = resolveCodexExecutable();
+    if (codexIsRunning(executable)) {
       showMessage("Quit ChatGPT Codex completely, then open BetterCodex for ChatGPT Codex again. BetterCodex can only attach when the app starts through its launcher.");
       process.exitCode = 2;
       return;
     }
-    const executable = resolveCodexExecutable();
+    const launchArguments = await takeLaunchArguments();
     await log(`Launching ${executable} with debugger port ${port}.`);
     child = spawn(executable, [
+      ...launchArguments,
       `--remote-debugging-port=${port}`,
       "--remote-debugging-address=127.0.0.1",
       "--remote-allow-origins=http://127.0.0.1,http://localhost"

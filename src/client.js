@@ -13,7 +13,6 @@
   const TWEAK_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 21v-7"></path><path d="M4 10V3"></path><path d="M12 21v-9"></path><path d="M12 8V3"></path><path d="M20 21v-5"></path><path d="M20 12V3"></path><path d="M1 14h6"></path><path d="M9 8h6"></path><path d="M17 16h6"></path></svg>`;
   const BRUSH_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"></path></svg>`;
   const SEARCH_ICON = `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="4.25"></circle><path d="m10.25 10.25 3 3"></path></svg>`;
-  const SHARE_ICON = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12.25" cy="3.25" r="1.75"></circle><circle cx="3.75" cy="8" r="1.75"></circle><circle cx="12.25" cy="12.75" r="1.75"></circle><path d="m5.3 7.15 5.4-3.05M5.3 8.85l5.4 3.05"></path></svg>`;
 
   function install(payload) {
     globalThis.BetterCodex?.destroy?.();
@@ -256,12 +255,6 @@
         .plugin-tag { padding:2px 7px; border:1px solid var(--bb-border); border-radius:999px; color:var(--bb-muted);
           background:var(--bb-hover); font-size:11px; line-height:16px; }
         .plugin-actions { flex:none; display:flex; align-items:center; gap:8px; }
-        .plugin-share { height:26px; display:flex; align-items:center; gap:5px; padding:3px 8px; border:1px solid var(--bb-border);
-          border-radius:7px; color:var(--bb-muted); background:transparent; cursor:pointer; font-size:11px; line-height:16px; }
-        .plugin-share:hover { color:var(--bb-text); background:var(--bb-hover); }
-        .plugin-share:focus-visible { outline:2px solid rgba(22,136,232,.55); outline-offset:2px; }
-        .plugin-share:disabled { opacity:.62; cursor:default; }
-        .plugin-share svg { width:14px; height:14px; flex:none; }
         .switch { position:relative; width:36px; height:20px; flex:0 0 auto; }
         .switch input { position:absolute; opacity:0; pointer-events:none; }
         .track { position:absolute; inset:0; border-radius:99px; background:#555; cursor:pointer; transition:.15s; }
@@ -318,43 +311,6 @@
     const getCreator = (manifest) => typeof manifest.creator === "string" && manifest.creator.trim()
       ? manifest.creator.trim()
       : "Unknown creator";
-    const getShareUrl = (manifest) => typeof manifest.shareUrl === "string" && /^https?:\/\//i.test(manifest.shareUrl.trim())
-      ? manifest.shareUrl.trim()
-      : "";
-    const copyShareUrl = async (value) => {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        return;
-      }
-      const textarea = document.createElement("textarea");
-      textarea.value = value;
-      textarea.setAttribute("readonly", "");
-      textarea.style.cssText = "position:fixed;left:-9999px;top:-9999px";
-      document.body.append(textarea);
-      textarea.select();
-      const copied = document.execCommand?.("copy");
-      textarea.remove();
-      if (!copied) throw new Error("Clipboard is unavailable");
-    };
-    const shareAddon = async (addon) => {
-      const creator = getCreator(addon.manifest);
-      const url = getShareUrl(addon.manifest);
-      const shareData = {
-        title: addon.manifest.name,
-        text: `${addon.manifest.name} by ${creator} — ${addon.manifest.description}`,
-        ...(url ? { url } : {})
-      };
-      if (typeof navigator.share === "function") {
-        try {
-          await navigator.share(shareData);
-          return "shared";
-        } catch (error) {
-          if (error?.name === "AbortError") return "cancelled";
-        }
-      }
-      await copyShareUrl(url || shareData.text);
-      return "copied";
-    };
     for (const addon of payload.addons) {
       const card = document.createElement("article");
       card.className = "plugin-card";
@@ -371,30 +327,15 @@
         <div class="description">${escapeHtml(addon.manifest.description)}</div>
         <div class="plugin-creator">By ${escapeHtml(creator)}</div>
         <div class="plugin-meta"><div class="plugin-tags" aria-label="Tags">${tags.map((tag) => `<span class="plugin-tag">${escapeHtml(tag)}</span>`).join("")}</div>
-          <div class="plugin-actions"><button class="plugin-share" type="button" aria-label="Share ${escapeAttribute(addon.manifest.name)}">${SHARE_ICON}<span>Share</span></button>
-            <label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
+          <div class="plugin-actions"><label class="switch" title="Enable ${escapeAttribute(addon.manifest.name)}"><input type="checkbox" data-addon="${escapeAttribute(addon.manifest.id)}">
             <span class="track"></span></label></div></div></div>`;
       const input = card.querySelector("input");
-      const shareButton = card.querySelector(".plugin-share");
       input.checked = isEnabled(addon.manifest.id);
       const list = addon.manifest.category === "theme" ? themeList : addon.manifest.category === "tweak" ? tweakList : addonList;
       input.addEventListener("change", () => {
         input.checked = api.setEnabled(addon.manifest.id, input.checked);
         refreshFilters.get(list)?.();
       });
-      shareButton.addEventListener("click", async () => {
-        const label = shareButton.querySelector("span");
-        shareButton.disabled = true;
-        try {
-          const result = await shareAddon(addon);
-          if (result !== "cancelled") label.textContent = result === "shared" ? "Shared" : "Copied";
-        } catch (error) {
-          console.error(`[BetterCodex] Could not share ${addon.manifest.id}`, error);
-          label.textContent = "Unavailable";
-        } finally {
-          shareButton.disabled = false;
-        }
-      }, { signal: controller.signal });
       list.append(card);
     }
 

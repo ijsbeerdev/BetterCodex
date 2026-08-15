@@ -5,11 +5,22 @@ $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $buildRoot = Join-Path $repoRoot "dist"
 $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
-$installRoot = Join-Path $localAppData "BetterCodex"
-$startMenu = Join-Path ([Environment]::GetFolderPath("Programs")) "BetterCodex for ChatGPT Codex.lnk"
-$desktop = Join-Path ([Environment]::GetFolderPath("Desktop")) "BetterCodex for ChatGPT Codex.lnk"
-$startup = Join-Path ([Environment]::GetFolderPath("Startup")) "BetterCodex ChatGPT Codex Watcher.lnk"
-$watcherTaskName = "BetterCodex ChatGPT Codex Watcher"
+$programsRoot = Join-Path $localAppData "Programs"
+$installRoot = Join-Path $programsRoot "BetterCodex"
+$stageRoot = Join-Path $programsRoot "BetterCodex.installing.$PID"
+$backupRoot = Join-Path $programsRoot "BetterCodex.previous.$PID"
+$runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$installActions = Join-Path $repoRoot "installer\Install-Actions.ps1"
+
+function Assert-ChildPath([string]$path, [string]$parent) {
+    $fullPath = [IO.Path]::GetFullPath($path)
+    $fullParent = [IO.Path]::GetFullPath($parent).TrimEnd('\') + '\'
+    if (-not $fullPath.StartsWith($fullParent, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to modify a path outside $parent."
+    }
+}
+
+foreach ($path in @($installRoot, $stageRoot, $backupRoot)) { Assert-ChildPath $path $programsRoot }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     throw "Node.js was not found on PATH. Install Node.js 22 or newer first."
@@ -18,53 +29,40 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 & node (Join-Path $repoRoot "scripts\build.mjs")
 if ($LASTEXITCODE -ne 0) { throw "BetterCodex build failed." }
 
-if (-not $installRoot.StartsWith($localAppData, [StringComparison]::OrdinalIgnoreCase)) {
-    throw "Refusing to install outside Local AppData."
-}
-
 if ($PSCmdlet.ShouldProcess("BetterCodex runtime processes", "Stop the previous runtime before updating")) {
-    Stop-ScheduledTask -TaskName $watcherTaskName -ErrorAction SilentlyContinue
-    $runtimeProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.CommandLine -like "*${installRoot}\watcher.ps1*" -or
-            $_.CommandLine -like "*${installRoot}\start.ps1*" -or
-            $_.CommandLine -like "*${installRoot}\launcher.mjs*"
-        } |
-        Select-Object -ExpandProperty ProcessId)
-    foreach ($processId in $runtimeProcesses) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue }
-    foreach ($processId in $runtimeProcesses) { Wait-Process -Id $processId -Timeout 10 -ErrorAction SilentlyContinue }
+    & $installActions -Action PrepareInstall
 }
 
-if ($PSCmdlet.ShouldProcess($installRoot, "Install the BetterCodex runtime")) {
-    if (Test-Path -LiteralPath $installRoot) { Remove-Item -LiteralPath $installRoot -Recurse -Force }
-    New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
-    Copy-Item -Path (Join-Path $buildRoot "*") -Destination $installRoot -Recurse -Force
-}
-
-foreach ($legacyShortcut in @($startMenu, $desktop, $startup)) {
-    if ((Test-Path -LiteralPath $legacyShortcut) -and $PSCmdlet.ShouldProcess($legacyShortcut, "Remove the legacy BetterCodex shortcut")) {
-        Remove-Item -LiteralPath $legacyShortcut -Force
+if ($PSCmdlet.ShouldProcess($installRoot, "Install the BetterCodex runtime transactionally")) {
+    New-Item -ItemType Directory -Path $programsRoot -Force | Out-Null
+    if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
+    if (Test-Path -LiteralPath $backupRoot) { Remove-Item -LiteralPath $backupRoot -Recurse -Force }
+    New-Item -ItemType Directory -Path $stageRoot -Force | Out-Null
+    Copy-Item -Path (Join-Path $buildRoot "*") -Destination $stageRoot -Recurse -Force
+    try {
+        if (Test-Path -LiteralPath $installRoot) { Move-Item -LiteralPath $installRoot -Destination $backupRoot }
+        Move-Item -LiteralPath $stageRoot -Destination $installRoot
+        if (Test-Path -LiteralPath $backupRoot) { Remove-Item -LiteralPath $backupRoot -Recurse -Force }
+    } catch {
+        if ((-not (Test-Path -LiteralPath $installRoot)) -and (Test-Path -LiteralPath $backupRoot)) {
+            Move-Item -LiteralPath $backupRoot -Destination $installRoot
+        }
+        throw
+    } finally {
+        if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
     }
 }
 
-if ($PSCmdlet.ShouldProcess($watcherTaskName, "Register the background per-user launch watcher")) {
-    $watcherScript = Join-Path $installRoot "watcher.ps1"
-    $powerShellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-    $watcherArguments = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $watcherScript
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $action = New-ScheduledTaskAction -Execute $powerShellPath -Argument $watcherArguments -WorkingDirectory $installRoot
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
-    $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Limited
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
-        -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew `
-        -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-    $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings
-    Register-ScheduledTask -TaskName $watcherTaskName -InputObject $task -Force | Out-Null
-    Start-ScheduledTask -TaskName $watcherTaskName
+if ($PSCmdlet.ShouldProcess("BetterCodex startup entry", "Start the tray manager with Windows")) {
+    New-Item -Path $runKey -Force | Out-Null
+    $managerPath = Join-Path $installRoot "BetterCodex.Manager.exe"
+    Set-ItemProperty -LiteralPath $runKey -Name "BetterCodex" -Value "`"$managerPath`" --startup"
+    & $installActions -Action CompleteInstall
+    Start-Process -FilePath $managerPath
 }
 
 if ($WhatIfPreference) {
     Write-Host "BetterCodex patch dry run completed."
 } else {
-    Write-Host "BetterCodex is patched and its background launch watcher is active. An open Codex window may briefly restart while BetterCodex loads."
+    Write-Host "BetterCodex is patched. Its tray manager is watching for verified Codex launches."
 }

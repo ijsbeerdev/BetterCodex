@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.4.0"><img alt="Latest release: v0.4.0" src="https://img.shields.io/badge/release-v0.4.0-2ea44f?style=flat-square"></a>
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.5.0"><img alt="Latest release: v0.5.0" src="https://img.shields.io/badge/release-v0.5.0-2ea44f?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
 </p>
 
@@ -16,7 +16,8 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 
 ## ✨ What makes it better
 
-- **Launch Codex normally** — a quiet, self-recovering per-user scheduled watcher handles injection from your existing Start menu or taskbar shortcut.
+- **Launch Codex normally** — an event-driven per-user watcher verifies the real Codex executable and handles injection from your existing Start menu or taskbar shortcut.
+- **Visible background status** — a compact notification-area manager can pause enhancement, restart the runtime, open diagnostics, and control Windows startup.
 - **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
 - **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
 - **Durable preferences** — add-on, tweak, theme, and feature state is backed up in the Windows user profile and survives patching or uninstalling BetterCodex.
@@ -50,19 +51,19 @@ Included add-ons and tweaks are enabled by default. Themes are opt-in, and every
 ## 📦 Install
 
 1. Go to the [latest BetterCodex release](https://github.com/ijsbeerdev/BetterCodex/releases/latest).
-2. Download the Windows x64 ZIP attached to that release.
-3. Extract the **entire** ZIP.
-4. Double-click **Install BetterCodex.cmd**.
+2. Download **bettercodex-&lt;version&gt;-windows-x64-setup.exe**.
+3. Run the installer. It installs per-user and does not request administrator access.
+4. Leave **Start BetterCodex with Windows** selected, then launch the tray manager.
 5. If Codex is open, let it briefly restart while BetterCodex loads. Future launches load automatically.
 
-The release includes its own verified portable runtime, so users do not need Node.js or npm. A clearly named per-user Scheduled Task keeps the watcher running in the background without a startup terminal or patching notifications. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the fresh process with BetterCodex attached.
+The setup package includes its own checksum-verified portable runtime, so users do not need Node.js or npm. BetterCodex appears in Windows **Installed apps**, installs a normal uninstaller, supports in-place upgrades, and starts its compact tray manager through the current user's standard startup entry. On first launch, the ChatGPT Codex window may briefly close while the watcher relaunches the verified process with BetterCodex attached.
 
 > [!TIP]
 > After installation, look for the robot icon beside **Help** in the bottom-left account toolbar.
 
 ## 🛠️ Build from source
 
-Source development requires Node.js 22 or newer.
+Source development requires Node.js 22 or newer. Building the release setup executable also requires Inno Setup 7 (or a compatible Inno Setup 6 compiler); the tray manager itself builds with the Windows .NET Framework compiler and adds no runtime dependency.
 
 ```powershell
 git clone https://github.com/ijsbeerdev/BetterCodex.git
@@ -77,7 +78,7 @@ Useful commands:
 ```powershell
 npm test        # Run the test suite
 npm run build   # Build the injectable runtime into dist/
-npm run package # Create a self-contained Windows release ZIP
+npm run package # Create the self-contained Windows setup executable
 npm run unpatch # Remove a source installation
 ```
 
@@ -101,7 +102,9 @@ The **Generate add-on**, **Generate tweak**, and **Generate theme** actions sit 
 ```text
 Normal Codex launch
         ↓
-Per-user watcher detects the fresh process
+Windows process-start event reaches the watcher
+        ↓
+Watcher verifies the package path, user session, and launch arguments
         ↓
 Codex relaunches with a loopback-only debugging endpoint
         ↓
@@ -112,7 +115,7 @@ The launcher resolves the newest installed Codex version every time, which lets 
 
 ## 🧹 Uninstall
 
-Release packages include **Uninstall BetterCodex.cmd**. Run it to stop and remove the watcher, runtime, and BetterCodex shortcuts. For a source install, run `npm run unpatch`.
+Remove BetterCodex from Windows **Settings → Apps → Installed apps**, or use **Uninstall BetterCodex** in its Start menu folder. Uninstall stops the tray manager and watcher, removes startup integration and the runtime, and leaves the official Codex app untouched. For a source install, run `npm run unpatch`.
 
 The official ChatGPT Codex installation is never removed or modified.
 
