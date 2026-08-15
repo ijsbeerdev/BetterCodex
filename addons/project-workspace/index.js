@@ -1797,7 +1797,24 @@
         root.addEventListener("dragend", () => { state.draggedPageId = null; state.draggedBlockId = null; root.querySelectorAll("[data-drop]").forEach((node) => node.removeAttribute("data-drop")); }, { signal: state.abortController.signal });
       };
 
-      const findMainSurface = () => [...document.querySelectorAll("main")].find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root")) || null;
+      const findMainSurface = () => {
+        if (state.mainSurface?.isConnected && !state.mainSurface.hasAttribute(ROOT_ATTRIBUTE)) return state.mainSurface;
+        const candidates = [...document.querySelectorAll("main")]
+          .filter((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const visible = candidates.filter((node) => {
+          if (node.hidden || node.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+          const style = getComputedStyle(node);
+          return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        });
+        const area = (node) => {
+          const bounds = node.getBoundingClientRect();
+          return bounds.width * bounds.height;
+        };
+        return visible.sort((left, right) => area(right) - area(left))[0]
+          || candidates.find((node) => !node.hidden)
+          || candidates[0]
+          || null;
+      };
       const restoreMainSurface = () => {
         const restore = state.mainRestore; if (!restore) return;
         restore.node.hidden = restore.hidden;
@@ -1848,7 +1865,8 @@
       };
       const ensureLauncher = () => {
         document.querySelectorAll(`[${LAUNCHER_ROW_ATTRIBUTE}]`).forEach((row) => { if (row !== state.launcherRow) row.remove(); });
-        const navigation = findProjectNavigation(); const newChat = findNewChatControl(); const newChatRow = newChat?.closest(".sidebar-item") || newChat?.parentElement;
+        const navigation = findProjectNavigation(); const newChat = findNewChatControl();
+        const newChatRow = newChat && (newChat.parentElement?.closest(".sidebar-item") || newChat.closest(".sidebar-item") || newChat.parentElement);
         if (!navigation || !newChatRow?.parentElement || !findProjectIdentity()) { closeWorkspace({ restoreFocus: false }); state.launcherRow?.remove(); state.launcher = null; state.launcherRow = null; return false; }
         if (state.launcher?.isConnected && state.launcherRow?.isConnected) return true;
         const launcherRow = newChatRow.cloneNode(true); launcherRow.setAttribute(LAUNCHER_ROW_ATTRIBUTE, "");

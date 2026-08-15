@@ -40,7 +40,7 @@ function createDom() {
   return new JSDOM(`<!doctype html><html><head></head><body>
     <aside><nav aria-label="Projects">
       <div class="rows">
-        <div class="sidebar-item"><button type="button"><div><span><svg></svg></span><span class="text-fade-truncate">New chat</span></div></button><button aria-label="Quick chat"></button></div>
+        <div class="sidebar-item"><button type="button" class="sidebar-item"><div><span><svg></svg></span><span class="text-fade-truncate">New chat</span></div></button><button aria-label="Quick chat"></button></div>
         <div class="sidebar-item selected"><button type="button" aria-current="page">Pull requests</button></div>
       </div>
       <div class="sidebar-item" data-app-action-sidebar-project-row data-app-action-sidebar-project-id="project-1" data-app-action-sidebar-project-label="bettercodex">bettercodex</div>
@@ -48,6 +48,7 @@ function createDom() {
         <div class="sidebar-item" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:docs" data-app-action-sidebar-thread-title="Document workspace" data-app-action-sidebar-thread-active="true"><span>Document workspace</span></div>
       </div>
     </nav></aside>
+    <div aria-hidden="true" style="visibility: hidden"><main class="hidden-overlay">Back to ChatGPT</main></div>
     <main class="native-main-surface">
       <div data-native-content>Native task</div>
       <div data-codex-composer contenteditable="true" aria-label="Message"></div>
@@ -83,7 +84,7 @@ test("creates a project-scoped Workspace tab with nested pages, rich blocks, sea
 
   launcher.click();
   const root = dom.window.document.querySelector("[data-bettercodex-project-workspace-root]");
-  const nativeMain = dom.window.document.querySelector("main:not([data-bettercodex-project-workspace-root])");
+  const nativeMain = dom.window.document.querySelector("main.native-main-surface:not([data-bettercodex-project-workspace-root])");
   assert.equal(root.tagName, "MAIN");
   assert.equal(root.className, "native-main-surface");
   assert.equal(root.hidden, false);
@@ -483,7 +484,7 @@ test("converts Workspace checklists into optional runnable Kanban cards", async 
   dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher]").click();
   const kanbanRoot = dom.window.document.querySelector("[data-bettercodex-project-kanban-root]");
   const workspaceRoot = dom.window.document.querySelector("[data-bettercodex-project-workspace-root]");
-  const nativeMain = dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root]):not([data-bettercodex-project-workspace-root])");
+  const nativeMain = dom.window.document.querySelector("main.native-main-surface:not([data-bettercodex-project-kanban-root]):not([data-bettercodex-project-workspace-root])");
   assert.match(kanbanRoot.querySelector("[data-bbpk-list='old']").textContent, /Ship Workspace documentation/);
   assert.equal(kanbanRoot.hidden, false);
   assert.equal(workspaceRoot.hidden, true);

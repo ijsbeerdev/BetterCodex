@@ -11,7 +11,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
     <aside>
       <nav aria-label="Projects">
         <div class="rows">
-          <div class="sidebar-item"><button type="button"><div><span><svg></svg></span><span class="text-fade-truncate">New chat</span></div></button><button aria-label="Quick chat"></button></div>
+          <div class="sidebar-item"><button type="button" class="sidebar-item"><div><span><svg></svg></span><span class="text-fade-truncate">New chat</span></div></button><button aria-label="Quick chat"></button></div>
           <div class="sidebar-item selected"><button type="button" aria-current="page">Pull requests</button></div>
         </div>
         <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-project-row data-app-action-sidebar-project-id="project-1" data-app-action-sidebar-project-label="bettercodex">bettercodex</div>
@@ -33,6 +33,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
         <div class="sidebar-item" role="button" tabindex="0" data-app-action-sidebar-thread-row data-app-action-sidebar-thread-id="local:render" data-app-action-sidebar-thread-title="Render graph" data-project-name="ComfyUI"><span>Render graph</span></div>
       </nav>
     </aside>
+    <div aria-hidden="true" style="visibility: hidden"><main class="hidden-overlay">Back to ChatGPT</main></div>
     <main class="native-main-surface">
       <div data-native-content>Native task<div>src/auth.js +1,400 -900</div><div>tests/auth.test.js +64 -16</div></div>
       <div class="group/turn-diff-header" data-native-change-header>
@@ -70,23 +71,26 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   await delay(10);
   const newChat = [...dom.window.document.querySelectorAll("button")].find((button) => button.textContent.trim() === "New chat");
   const launcher = dom.window.document.querySelector("[data-bettercodex-project-kanban-launcher]");
+  const newChatRow = newChat.parentElement.closest(".sidebar-item");
+  const launcherRow = launcher.closest("[data-bettercodex-project-kanban-launcher-row]");
   assert.ok(launcher);
   assert.match(launcher.textContent, /^Kanban$/);
-  assert.notEqual(launcher.closest(".sidebar-item"), newChat.closest(".sidebar-item"));
-  assert.equal(newChat.closest(".sidebar-item").nextElementSibling, launcher.closest(".sidebar-item"));
-  assert.equal(launcher.closest(".sidebar-item").querySelectorAll("button").length, 1);
+  assert.notEqual(launcherRow, newChatRow);
+  assert.equal(newChatRow.nextElementSibling, launcherRow);
+  assert.equal(launcherRow.querySelectorAll("button").length, 1);
   assert.equal(dom.window.document.querySelectorAll("[data-bettercodex-project-kanban-launcher-row]").length, 1);
 
   launcher.click();
   const root = dom.window.document.querySelector("[data-bettercodex-project-kanban-root]");
+  const nativeMain = dom.window.document.querySelector("main.native-main-surface:not([data-bettercodex-project-kanban-root])");
   assert.equal(root.hidden, false);
   assert.equal(root.tagName, "MAIN");
   assert.equal(root.className, "native-main-surface");
-  assert.equal(root.previousElementSibling, dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])"));
+  assert.equal(root.previousElementSibling, nativeMain);
   assert.equal(root.getAttribute("aria-label"), "Kanban");
   assert.equal(root.querySelector("form"), null);
   assert.equal(root.querySelector("button[aria-label*='Sync' i]"), null);
-  assert.equal(dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])").hidden, true);
+  assert.equal(nativeMain.hidden, true);
   assert.equal(dom.window.document.querySelector("aside").getAttribute("aria-hidden"), null);
   const pullRequests = [...dom.window.document.querySelectorAll("button")].find((button) => button.textContent.trim() === "Pull requests");
   assert.equal(pullRequests.getAttribute("aria-current"), "page");
@@ -201,7 +205,7 @@ test("renders a native task Kanban, tracks activity and change totals, completes
   projectRow.click();
   await delay(0);
   assert.equal(root.hidden, true);
-  assert.equal(dom.window.document.querySelector("main:not([data-bettercodex-project-kanban-root])").hidden, false);
+  assert.equal(nativeMain.hidden, false);
   assert.equal(pullRequests.closest(".sidebar-item").hasAttribute("data-bettercodex-project-kanban-suppressed-nav"), false);
 
   registration.start();

@@ -63,6 +63,24 @@
         }
         return node;
       };
+      const findMainSurface = () => {
+        if (state.mainSurface?.isConnected && !state.mainSurface.hasAttribute(ROOT_ATTRIBUTE)) return state.mainSurface;
+        const candidates = [...document.querySelectorAll("main")]
+          .filter((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const visible = candidates.filter((node) => {
+          if (node.hidden || node.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+          const style = getComputedStyle(node);
+          return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        });
+        const area = (node) => {
+          const bounds = node.getBoundingClientRect();
+          return bounds.width * bounds.height;
+        };
+        return visible.sort((left, right) => area(right) - area(left))[0]
+          || candidates.find((node) => !node.hidden)
+          || candidates[0]
+          || null;
+      };
 
       const migrateStatus = (status, progress) => {
         if (status === "done") return "done";
@@ -250,8 +268,7 @@
         ].join(" "));
         if (rowSummary || !active) return rowSummary;
 
-        const main = [...document.querySelectorAll("main")]
-          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const main = findMainSurface();
         const summaryNode = main?.querySelector("[data-task-change-summary], [data-diff-summary], [data-files-changed], [aria-label*='files changed' i]");
         if (summaryNode) {
           const files = summaryNode.getAttribute("data-files-changed");
@@ -300,8 +317,7 @@
 
       const readPushState = (active) => {
         if (!active) return null;
-        const main = [...document.querySelectorAll("main")]
-          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const main = findMainSurface();
         if (!main) return null;
         const labels = [...main.querySelectorAll("[data-slot='thread-summary-panel-item-label']")];
         const commitOrPush = labels.find((label) => /^commit or push$/i.test(normalizeText(label.textContent)))
@@ -648,8 +664,7 @@
       ));
 
       const findNativeChangeAction = (action) => {
-        const main = [...document.querySelectorAll("main")]
-          .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root"));
+        const main = findMainSurface();
         const overlays = [...(main?.querySelectorAll("button[aria-label='Review changed files']") || [])];
         const overlay = overlays.at(-1);
         if (!overlay) return null;
@@ -844,9 +859,6 @@
         }
       }
 
-      const findMainSurface = () => [...document.querySelectorAll("main")]
-        .find((node) => !node.hasAttribute(ROOT_ATTRIBUTE) && !node.closest("#bettercodex-client-root")) || null;
-
       const restoreMainSurface = () => {
         const restore = state.mainRestore;
         if (!restore) return;
@@ -972,7 +984,11 @@
         });
         const projectNavigation = findProjectNavigation();
         const anchor = findNewChatControl(projectNavigation);
-        const anchorRow = anchor?.closest(".sidebar-item") || anchor?.parentElement;
+        const anchorRow = anchor && (
+          anchor.parentElement?.closest(".sidebar-item")
+          || anchor.closest(".sidebar-item")
+          || anchor.parentElement
+        );
         if (!projectNavigation || !anchorRow?.parentElement || !document.body.contains(anchorRow)) {
           closeBoard({ restoreFocus: false });
           state.launcherRow?.remove();

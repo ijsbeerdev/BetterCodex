@@ -5,6 +5,11 @@
   const STORAGE_KEY = "bettercodex:addons:v1";
   const PREFERENCES_BINDING = "__BETTERCODEX_SAVE_PREFERENCES__";
   const STORAGE_KEY_PATTERN = /^bettercodex(?:[.:_-]|$)/i;
+  const removeNativeLaunchers = (keep = null) => {
+    document.querySelectorAll(`#${LAUNCHER_ID}`).forEach((candidate) => {
+      if (candidate !== keep) candidate.remove();
+    });
+  };
   const BETTERCODEX_ICON = `<svg data-bettercodex-icon aria-hidden="true" class="icon-sm" width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M8 4V2.5m-1.25 0h2.5M4.25 5.25h7.5a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-7.5a1.5 1.5 0 0 1-1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5ZM1.5 8v1.5m13-1.5v1.5M6 8.5h.01m3.99 0h.01"></path></svg>`;
   const REFRESH_ICON = `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 4.53-.761l.302-.954A6 6 0 1 1 4.681 3z"></path></svg>`;
   const BACK_ICON = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.8011 3.611C9.05912 3.44087 9.40989 3.46898 9.63703 3.69596C9.89673 3.95566 9.89673 4.37767 9.63703 4.63737L4.93977 9.33463H16.6663L16.8011 9.34831C17.1038 9.41043 17.3312 9.67859 17.3314 9.99967C17.3314 10.3209 17.1039 10.5888 16.8011 10.651L16.6663 10.6647H4.93879L9.63703 15.363L9.722 15.4674C9.89241 15.7255 9.86413 16.0761 9.63703 16.3034C9.40981 16.5306 9.05921 16.5587 8.8011 16.3883L8.69661 16.3034L2.86262 10.4704C2.60319 10.2108 2.6033 9.78962 2.86262 9.52995L8.69661 3.69596L8.8011 3.611Z" fill="currentColor"></path></svg>`;
@@ -17,7 +22,7 @@
   function install(payload) {
     globalThis.BetterCodex?.destroy?.();
     document.getElementById(ROOT_ID)?.remove();
-    document.getElementById(LAUNCHER_ID)?.remove();
+    removeNativeLaunchers();
     document.getElementById(LAUNCHER_STYLE_ID)?.remove();
 
     const catalog = new Map(payload.addons.map((addon) => [addon.manifest.id, addon]));
@@ -651,13 +656,14 @@
       open,
       close,
       destroy() {
+        const ownsGlobal = globalThis.BetterCodex === api;
         controller.abort();
         for (const id of [...active]) stop(id);
         if (document.body) document.body.style.overflow = previousOverflow;
-        launcher?.remove();
+        if (ownsGlobal) removeNativeLaunchers(); else launcher?.remove();
         launcherStyle.remove();
         host.remove();
-        if (globalThis.BetterCodex === api) delete globalThis.BetterCodex;
+        if (ownsGlobal) delete globalThis.BetterCodex;
       }
     };
     globalThis.BetterCodex = api;
@@ -668,7 +674,11 @@
       return /open help menu/i.test(element.getAttribute("aria-label") || "") && (hiddenByTweak || rect.bottom > innerHeight - 100);
     });
     const mountLauncher = () => {
-      if (launcher?.isConnected) return;
+      if (launcher?.isConnected) {
+        removeNativeLaunchers(launcher);
+        return;
+      }
+      removeNativeLaunchers();
       const help = findHelpButton();
       if (!help?.parentElement) return;
       launcher = help.cloneNode(false);

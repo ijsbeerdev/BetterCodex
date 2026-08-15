@@ -338,6 +338,23 @@ test("reinjection is idempotent", () => {
   dom.window.BetterCodex.destroy();
 });
 
+test("removes duplicate launchers left by native footer reconciliation", async () => {
+  const { dom } = setup();
+  const document = dom.window.document;
+  const launcher = document.getElementById("bettercodex-native-launcher");
+  const orphan = launcher.cloneNode(true);
+  launcher.after(orphan);
+
+  assert.equal(document.querySelectorAll("#bettercodex-native-launcher").length, 2);
+  await delay(10);
+  assert.equal(document.querySelectorAll("#bettercodex-native-launcher").length, 1);
+  assert.equal(launcher.isConnected, true);
+  assert.equal(orphan.isConnected, false);
+
+  dom.window.BetterCodex.destroy();
+  assert.equal(document.querySelectorAll("#bettercodex-native-launcher").length, 0);
+});
+
 test("waits for the native toolbar before showing its launcher", async () => {
   const dom = new JSDOM("<!doctype html><body></body>", {
     url: "https://codex.local/",
