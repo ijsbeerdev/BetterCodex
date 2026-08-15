@@ -1,6 +1,6 @@
 {
   "name": "bettercodex-codex-patcher",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "A runtime mod loader for the ChatGPT Codex desktop app.",

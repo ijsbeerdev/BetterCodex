@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.5.0"><img alt="Latest release: v0.5.0" src="https://img.shields.io/badge/release-v0.5.0-2ea44f?style=flat-square"></a>
+  <a href="https://github.com/ijsbeerdev/BetterCodex/releases/tag/v0.5.1"><img alt="Latest release: v0.5.1" src="https://img.shields.io/badge/release-v0.5.1-2ea44f?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
 </p>
 

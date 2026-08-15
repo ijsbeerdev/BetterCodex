@@ -9,7 +9,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("uses a fresh 0.x release version", async () => {
   const packageInfo = JSON.parse(await read("package.json"));
-  assert.equal(packageInfo.version, "0.5.0");
+  assert.equal(packageInfo.version, "0.5.1");
 });
 
 test("watcher validates process identity and debugger ownership", async () => {
