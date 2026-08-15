@@ -2,6 +2,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const CATEGORY_DIRECTORIES = Object.freeze({
+  addon: "addons",
+  tweak: "tweaks",
+  theme: "themes"
+});
 const SCREENSHOT_TYPES = new Map([
   [".jpeg", "image/jpeg"],
   [".jpg", "image/jpeg"],
@@ -10,7 +15,7 @@ const SCREENSHOT_TYPES = new Map([
   [".webp", "image/webp"]
 ]);
 
-export function validateManifest(manifest, folderName = manifest?.id) {
+export function validateManifest(manifest, folderName = manifest?.id, expectedCategory) {
   if (!manifest || typeof manifest !== "object") throw new Error("Add-on manifest must be an object");
   if (!ID_PATTERN.test(manifest.id ?? "")) throw new Error("Add-on id must use kebab-case");
   if (folderName && manifest.id !== folderName) throw new Error(`Add-on id ${manifest.id} must match folder ${folderName}`);
@@ -30,6 +35,9 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   }
   if (manifest.category !== undefined && !["addon", "tweak", "theme"].includes(manifest.category)) {
     throw new Error(`Add-on ${manifest.id} category must be addon, tweak, or theme`);
+  }
+  if (expectedCategory && manifest.category !== expectedCategory) {
+    throw new Error(`Add-on ${manifest.id} category must be ${expectedCategory} inside ${CATEGORY_DIRECTORIES[expectedCategory]}`);
   }
   if (manifest.enabledByDefault !== undefined && typeof manifest.enabledByDefault !== "boolean") {
     throw new Error(`Add-on ${manifest.id} enabledByDefault must be a boolean`);
@@ -53,20 +61,29 @@ export function validateManifest(manifest, folderName = manifest?.id) {
   return manifest;
 }
 
-export async function loadAddons(addonsRoot) {
-  const entries = await readdir(addonsRoot, { withFileTypes: true });
+async function loadCategory(root, category) {
+  const entries = await readdir(root, { withFileTypes: true });
   const folders = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
   return Promise.all(folders.map(async (folder) => {
-    const root = join(addonsRoot, folder);
-    const manifest = validateManifest(JSON.parse(await readFile(join(root, "manifest.json"), "utf8")), folder);
-    const source = await readFile(join(root, "index.js"), "utf8");
+    const entryRoot = join(root, folder);
+    const manifest = validateManifest(JSON.parse(await readFile(join(entryRoot, "manifest.json"), "utf8")), folder, category);
+    const source = await readFile(join(entryRoot, "index.js"), "utf8");
     let screenshot = null;
     if (manifest.screenshot) {
       const extension = extname(manifest.screenshot).toLowerCase();
-      const image = await readFile(join(root, manifest.screenshot));
+      const image = await readFile(join(entryRoot, manifest.screenshot));
       screenshot = `data:${SCREENSHOT_TYPES.get(extension)};base64,${image.toString("base64")}`;
     }
     return { manifest, screenshot, source: `${source}\n//# sourceURL=bettercodex-addon://${manifest.id}/index.js` };
   }));
+}
+
+export async function loadCatalog(catalogRoots) {
+  const groups = await Promise.all(Object.keys(CATEGORY_DIRECTORIES).map((category) => {
+    const root = catalogRoots?.[category];
+    if (typeof root !== "string" || !root) throw new Error(`Catalog needs a ${category} directory`);
+    return loadCategory(root, category);
+  }));
+  return groups.flat().sort((left, right) => left.manifest.id.localeCompare(right.manifest.id));
 }

@@ -4,8 +4,8 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDebuggerTargets, injectTarget, isCodexAppTarget, replaceInjection, scopeExpressionToCodexApp, updatePersistentInjection } from "./cdp.mjs";
-import { loadAddons } from "./catalog.mjs";
-import { reloadRenderers, watchAddons } from "./hot-reload.mjs";
+import { CATEGORY_DIRECTORIES, loadCatalog } from "./catalog.mjs";
+import { reloadRenderers, watchFiles } from "./hot-reload.mjs";
 import { createPreferencesStore, installPreferencesBridge } from "./preferences.mjs";
 import { installUpdateBridge } from "./updates.mjs";
 
@@ -19,15 +19,19 @@ const logRoot = join(dataRoot, "Logs");
 const logPath = join(logRoot, "bettercodex.log");
 const launchRequestPath = join(dataRoot, "launch-request.json");
 const preferencesStore = createPreferencesStore(join(profileRoot, "BetterCodex", "preferences.json"));
-async function resolveAddonsRoot() {
-  const developmentRoot = packageInfo.developmentAddonsPath;
-  if (developmentRoot) {
-    try { await access(developmentRoot); return developmentRoot; } catch {}
+async function resolveCatalogRoots() {
+  const roots = {};
+  for (const [category, directory] of Object.entries(CATEGORY_DIRECTORIES)) {
+    const developmentRoot = packageInfo.developmentCatalogPaths?.[category];
+    if (developmentRoot) {
+      try { await access(developmentRoot); roots[category] = developmentRoot; continue; } catch {}
+    }
+    roots[category] = join(runtimeRoot, directory);
   }
-  return join(runtimeRoot, "addons");
+  return roots;
 }
 
-const addonsRoot = await resolveAddonsRoot();
+const catalogRoots = await resolveCatalogRoots();
 
 async function resolveClientPath() {
   const developmentPath = packageInfo.developmentClientPath;
@@ -41,9 +45,9 @@ const clientPath = await resolveClientPath();
 
 async function createExpression() {
   const clientSource = await readFile(clientPath, "utf8");
-  const addons = await loadAddons(addonsRoot);
+  const addons = await loadCatalog(catalogRoots);
   const preferences = await preferencesStore.load();
-  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, addonsPath: addonsRoot, addons, preferences };
+  const payload = { version: packageInfo.version, repository: packageInfo.repository.url, catalogPaths: catalogRoots, addons, preferences };
   return scopeExpressionToCodexApp(`${clientSource}\n;globalThis.__BETTERCODEX_INJECT__(${JSON.stringify(payload)});`);
 }
 
@@ -126,7 +130,7 @@ async function waitForDebugger() {
 }
 
 async function main() {
-  await log(`Starting BetterCodex ${packageInfo.version}; watching ${addonsRoot} and ${clientPath}.`);
+  await log(`Starting BetterCodex ${packageInfo.version}; watching ${Object.values(catalogRoots).join(", ")} and ${clientPath}.`);
   let targets;
   let child;
   let childExited = false;
@@ -157,7 +161,7 @@ async function main() {
   const sessions = new Map();
   let reloadQueue = Promise.resolve();
   let preferencesQueue = Promise.resolve();
-  let addonWatcher;
+  const catalogWatchers = [];
   let clientWatcher;
   const queuePreferencesRefresh = () => {
     preferencesQueue = preferencesQueue.then(async () => {
@@ -180,10 +184,10 @@ async function main() {
     }).catch((error) => log(`Hot reload failed: ${error.message}`));
   };
   try {
-    addonWatcher = watchAddons(addonsRoot, queueReload);
-    clientWatcher = watchAddons(clientPath, queueReload, { recursive: false });
+    for (const root of Object.values(catalogRoots)) catalogWatchers.push(watchFiles(root, queueReload));
+    clientWatcher = watchFiles(clientPath, queueReload, { recursive: false });
   } catch (error) {
-    await log(`Could not watch add-ons: ${error.message}`);
+    await log(`Could not watch catalog files: ${error.message}`);
   }
 
   let failures = 0;
@@ -231,7 +235,7 @@ async function main() {
     } catch { failures += 1; }
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
-  addonWatcher?.close();
+  for (const watcher of catalogWatchers) watcher.close();
   clientWatcher?.close();
   await reloadQueue;
   await preferencesQueue;

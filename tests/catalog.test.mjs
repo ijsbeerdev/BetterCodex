@@ -3,12 +3,18 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadAddons, validateManifest } from "../src/catalog.mjs";
+import { loadCatalog, validateManifest } from "../src/catalog.mjs";
 
-test("loads a validated add-on catalog", async () => {
+test("loads a validated catalog from separate category directories", async () => {
   const root = await mkdtemp(join(tmpdir(), "bettercodex-catalog-"));
   try {
-    const addonRoot = join(root, "hello-world");
+    const roots = {
+      addon: join(root, "addons"),
+      tweak: join(root, "tweaks"),
+      theme: join(root, "themes")
+    };
+    await Promise.all(Object.values(roots).map((directory) => mkdir(directory)));
+    const addonRoot = join(roots.tweak, "hello-world");
     await mkdir(addonRoot);
     await writeFile(join(addonRoot, "manifest.json"), JSON.stringify({
       id: "hello-world", name: "Hello world", version: "1.2.3", description: "A test add-on.",
@@ -16,7 +22,7 @@ test("loads a validated add-on catalog", async () => {
     }));
     await writeFile(join(addonRoot, "index.js"), "BetterCodex.register({ id: 'hello-world' });");
     await writeFile(join(addonRoot, "screenshot.svg"), "<svg xmlns='http://www.w3.org/2000/svg'></svg>");
-    const [addon] = await loadAddons(root);
+    const [addon] = await loadCatalog(roots);
     assert.equal(addon.manifest.id, "hello-world");
     assert.equal(addon.manifest.category, "tweak");
     assert.equal(addon.manifest.creator, "Test Creator");
@@ -34,6 +40,7 @@ test("rejects invalid or mismatched manifests", () => {
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No" }, "two"), /match folder/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", screenshot: "..\\bad.svg" }), /screenshot/);
   assert.equal(validateManifest({ id: "one", name: "One", version: "1", description: "No", category: "theme" }).category, "theme");
+  assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", category: "theme" }, "one", "tweak"), /must be tweak inside tweaks/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", category: "skin" }), /category/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", tags: "workflow" }), /tags/);
   assert.throws(() => validateManifest({ id: "one", name: "One", version: "1", description: "No", tags: [] }), /tags/);

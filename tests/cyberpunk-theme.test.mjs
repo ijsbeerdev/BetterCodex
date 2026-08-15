@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { JSDOM } from "jsdom";
 
-const addonSource = await readFile(new URL("../addons/cyberpunk-theme/index.js", import.meta.url), "utf8");
-const manifest = JSON.parse(await readFile(new URL("../addons/cyberpunk-theme/manifest.json", import.meta.url), "utf8"));
+const addonSource = await readFile(new URL("../themes/cyberpunk-theme/index.js", import.meta.url), "utf8");
+const manifest = JSON.parse(await readFile(new URL("../themes/cyberpunk-theme/manifest.json", import.meta.url), "utf8"));
 
 test("Codex 2077 applies globally, skins BetterCodex, and cleans up completely", () => {
   assert.equal(manifest.name, "Codex 2077");

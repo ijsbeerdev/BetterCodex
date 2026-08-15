@@ -10,14 +10,14 @@ export async function reloadRenderers(sessions, expression, replace) {
   };
 }
 
-export function watchAddons(addonsRoot, onChange, options = {}) {
+export function watchFiles(root, onChange, options = {}) {
   const debounceMs = options.debounceMs ?? 180;
   const watchImpl = options.watchImpl ?? watch;
   const recursive = options.recursive ?? true;
   let timer;
-  let latestChange = { eventType: "change", filename: "addons" };
-  const watcher = watchImpl(addonsRoot, { recursive }, (eventType, filename) => {
-    latestChange = { eventType, filename: filename ? String(filename) : "addons" };
+  let latestChange = { eventType: "change", filename: "catalog" };
+  const watcher = watchImpl(root, { recursive }, (eventType, filename) => {
+    latestChange = { eventType, filename: filename ? String(filename) : "catalog" };
     clearTimeout(timer);
     timer = setTimeout(() => onChange(latestChange), debounceMs);
   });

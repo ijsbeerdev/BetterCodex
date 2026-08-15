@@ -2,20 +2,23 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadAddons } from "../src/catalog.mjs";
+import { CATEGORY_DIRECTORIES, loadCatalog } from "../src/catalog.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outputRoot = join(repoRoot, "dist");
 const releaseBuild = process.argv.includes("--release");
 const packageInfo = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
-const addons = await loadAddons(join(repoRoot, "addons"));
+const catalogPaths = Object.fromEntries(Object.entries(CATEGORY_DIRECTORIES).map(([category, directory]) => [category, join(repoRoot, directory)]));
+const addons = await loadCatalog(catalogPaths);
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
 for (const file of ["catalog.mjs", "cdp.mjs", "client.js", "hot-reload.mjs", "launcher.mjs", "preferences.mjs", "updates.mjs", "start.ps1", "watcher.ps1"]) {
   await cp(join(repoRoot, "src", file), join(outputRoot, file));
 }
-await cp(join(repoRoot, "addons"), join(outputRoot, "addons"), { recursive: true });
+for (const directory of Object.values(CATEGORY_DIRECTORIES)) {
+  await cp(join(repoRoot, directory), join(outputRoot, directory), { recursive: true });
+}
 const managerVersion = `${packageInfo.version.replace(/-.+$/, "")}.0`.split(".").slice(0, 4).join(".");
 const managerVersionSource = join(outputRoot, "BetterCodex.Manager.Version.cs");
 await writeFile(managerVersionSource, [
@@ -52,10 +55,10 @@ await writeFile(join(outputRoot, "package.json"), `${JSON.stringify({
   repository: packageInfo.repository,
   type: "module",
   ...(releaseBuild ? {} : {
-    developmentAddonsPath: join(repoRoot, "addons"),
+    developmentCatalogPaths: catalogPaths,
     developmentClientPath: join(repoRoot, "src", "client.js")
   }),
   addons: addons.map(({ manifest }) => manifest)
 }, null, 2)}\n`);
 
-console.log(`Built BetterCodex ${packageInfo.version}${releaseBuild ? " release" : ""} with ${addons.length} add-on(s) in ${outputRoot}`);
+console.log(`Built BetterCodex ${packageInfo.version}${releaseBuild ? " release" : ""} with ${addons.length} catalog item(s) in ${outputRoot}`);

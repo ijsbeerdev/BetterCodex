@@ -22,7 +22,11 @@ function setup(options = {}) {
   const payload = {
     version: "1.0.0",
     repository: "https://github.com/ijsbeerdev/bettercodex",
-    addonsPath: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
+    catalogPaths: {
+      addon: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons",
+      tweak: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\tweaks",
+      theme: "C:\\Users\\test\\AppData\\Local\\BetterCodex\\themes"
+    },
     preferences: options.preferences,
     addons: [{
       manifest: { id: "test-addon", name: "Test add-on", version: "1.0.0", description: "Tests toggles.", creator: "Test Creator", shareUrl: "https://github.com/ijsbeerdev/bettercodex/tree/main/addons/test-addon", category: "addon", tags: ["Productivity", "Projects"], enabledByDefault: true },
@@ -320,7 +324,7 @@ test("Generate theme prepares an unsent projectless task with category-specific 
   assert.match(attachedRequirements, /include it as shareUrl/);
   assert.match(attachedRequirements, /Codex's existing UI as the component library/i);
   assert.match(attachedRequirements, /style native Codex and BetterCodex components in place/i);
-  assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\BetterCodex\\addons/);
+  assert.match(attachedRequirements, /C:\\Users\\test\\AppData\\Local\\BetterCodex\\themes/);
   assert.match(attachedRequirements, /BetterCodex\.register/);
   assert.match(attachedRequirements, /classic browser JavaScript/i);
   assert.match(attachedRequirements, /screenshot\.svg/);

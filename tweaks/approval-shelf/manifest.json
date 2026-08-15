@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Keeps Codex's native composer visible beneath approval prompts.",
   "creator": "ijsbeerdev",
-  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/approval-shelf",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/tweaks/approval-shelf",
   "category": "tweak",
   "tags": ["Approvals", "Composer"],
   "screenshot": "screenshot.svg",

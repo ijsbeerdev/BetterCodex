@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
-import { loadAddons } from "../src/catalog.mjs";
+import { loadCatalog } from "../src/catalog.mjs";
 import { replaceInjection, updatePersistentInjection } from "../src/cdp.mjs";
-import { reloadRenderers, watchAddons } from "../src/hot-reload.mjs";
+import { reloadRenderers, watchFiles } from "../src/hot-reload.mjs";
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-test("bundled add-ons load without a hot-reload toggle", async () => {
-  const addonsRoot = fileURLToPath(new URL("../addons", import.meta.url));
-  const addons = await loadAddons(addonsRoot);
+test("bundled catalog items load from their category directories", async () => {
+  const addons = await loadCatalog({
+    addon: fileURLToPath(new URL("../addons", import.meta.url)),
+    tweak: fileURLToPath(new URL("../tweaks", import.meta.url)),
+    theme: fileURLToPath(new URL("../themes", import.meta.url))
+  });
   assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cyberpunk-theme", "hide-sidebar-help", "hide-sidebar-voice", "project-kanban", "project-workspace", "thinking-mode-colors", "weekly-limit"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
@@ -63,7 +66,7 @@ test("add-on file events are debounced", async () => {
   let listener;
   let closed = false;
   const changes = [];
-  const watcher = watchAddons("C:\\addons", (change) => changes.push(change), {
+  const watcher = watchFiles("C:\\addons", (change) => changes.push(change), {
     debounceMs: 5,
     watchImpl(root, options, callback) {
       assert.equal(root, "C:\\addons");
@@ -82,7 +85,7 @@ test("add-on file events are debounced", async () => {
 
 test("file watching can disable recursive mode for the client bundle", () => {
   let observedOptions;
-  const watcher = watchAddons("C:\\client.js", () => {}, {
+  const watcher = watchFiles("C:\\client.js", () => {}, {
     recursive: false,
     watchImpl(root, options) {
       observedOptions = options;

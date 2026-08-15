@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { JSDOM } from "jsdom";
 
-const addonSource = await readFile(new URL("../addons/hide-sidebar-voice/index.js", import.meta.url), "utf8");
+const addonSource = await readFile(new URL("../tweaks/hide-sidebar-voice/index.js", import.meta.url), "utf8");
 const delay = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function setup() {
