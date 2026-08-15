@@ -45,12 +45,15 @@ test("release uses an event-driven tray manager and a registered Windows install
   assert.match(launcher, /takeLaunchArguments/);
   assert.match(launcher, /endpointOccupied/);
   assert.match(launcher, /ExecutablePath -eq \$p/);
+  assert.match(launcher, /installAutomaticUpdate/);
+  assert.match(launcher, /automaticUpdatesEnabled/);
 
   assert.match(manager, /NotifyIcon/);
   assert.match(manager, /Pause automatic enhancement/);
   assert.match(manager, /Restart BetterCodex runtime/);
   assert.match(manager, /Start with Windows/);
   assert.match(manager, /--shutdown/);
+  assert.match(manager, /--resume-update/);
   assert.match(build, /BetterCodex\.Manager\.exe/);
 
   assert.match(installer, /AppId=/);
@@ -59,6 +62,8 @@ test("release uses an event-driven tray manager and a registered Windows install
   assert.match(installer, /UninstallDisplayName=BetterCodex/);
   assert.match(installer, /CurrentVersion\\Run/);
   assert.match(installer, /PrepareToInstall/);
+  assert.match(installer, /AUTOMATICUPDATE/);
+  assert.match(installer, /Parameters: "--resume-update"/);
   assert.match(actions, /PrepareInstall/);
   assert.match(actions, /CompleteInstall/);
   assert.match(actions, /Get-AppxPackage -Name OpenAI\.Codex/);

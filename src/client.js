@@ -3,6 +3,7 @@
   const LAUNCHER_ID = "bettercodex-native-launcher";
   const LAUNCHER_STYLE_ID = "bettercodex-native-launcher-style";
   const STORAGE_KEY = "bettercodex:addons:v1";
+  const AUTO_UPDATE_STORAGE_KEY = "bettercodex:autoupdate:v1";
   const PREFERENCES_BINDING = "__BETTERCODEX_SAVE_PREFERENCES__";
   const STORAGE_KEY_PATTERN = /^bettercodex(?:[.:_-]|$)/i;
   const removeNativeLaunchers = (keep = null) => {
@@ -299,6 +300,8 @@
               <div class="row"><div class="copy"><div class="name">Version</div><div class="description update-status" aria-live="polite">Installed BetterCodex runtime</div></div>
                 <div class="update-actions"><div class="version">${escapeHtml(payload.version)}</div><button class="repo update-check" type="button">${REFRESH_ICON}<span>Check for updates</span></button>
                   <a class="repo update-download" href="#" target="_blank" rel="noreferrer" hidden>View release ↗</a></div></div>
+              <div class="row"><div class="copy"><div class="name">Automatic updates</div><div class="description">Download and install new releases when BetterCodex starts</div></div>
+                <label class="switch" title="Automatically update BetterCodex"><input class="autoupdate-toggle" type="checkbox" ${preferenceStorage.getItem(AUTO_UPDATE_STORAGE_KEY) === "true" ? "checked" : ""} aria-label="Automatically update BetterCodex"><span class="track"></span></label></div>
               <div class="row"><div class="copy"><div class="name">Source code</div><div class="description">View BetterCodex on GitHub</div></div>
                 <a class="repo source-link" href="${escapeAttribute(payload.repository)}" target="_blank" rel="noreferrer">Open ↗</a></div>
             </div></section>
@@ -429,6 +432,10 @@
     const updateCheck = shadow.querySelector(".update-check");
     const updateStatus = shadow.querySelector(".update-status");
     const updateDownload = shadow.querySelector(".update-download");
+    const automaticUpdateToggle = shadow.querySelector(".autoupdate-toggle");
+    automaticUpdateToggle.addEventListener("change", () => {
+      preferenceStorage.setItem(AUTO_UPDATE_STORAGE_KEY, automaticUpdateToggle.checked ? "true" : "false");
+    }, { signal: controller.signal });
     const requestLatestRelease = () => new Promise((resolve, reject) => {
       const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const timeout = setTimeout(() => finish(new Error("Update check timed out")), 10_000);

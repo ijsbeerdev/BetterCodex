@@ -80,6 +80,8 @@ test("mounts a themed native button after Help and opens a full-page view", () =
   assert.equal(shadow.querySelector(".update-check").previousElementSibling?.className, "version");
   assert.equal(shadow.querySelector(".update-check").closest(".row").querySelector(".name")?.textContent, "Version");
   assert.equal(shadow.querySelector(".update-check svg").getAttribute("viewBox"), "0 0 16 16");
+  assert.equal(shadow.querySelector(".autoupdate-toggle").checked, false);
+  assert.equal(shadow.querySelector(".autoupdate-toggle").closest(".row").querySelector(".name").textContent, "Automatic updates");
   assert.equal(shadow.querySelector(".source-link").href, "https://github.com/ijsbeerdev/bettercodex");
   assert.equal(shadow.querySelectorAll(".section h2").length, 0);
   assert.deepEqual([...shadow.querySelectorAll(".catalog-search")].map((input) => input.placeholder), ["Search add-ons", "Search tweaks", "Search themes"]);
@@ -224,6 +226,21 @@ test("enables, disables, persists, and cleans up add-ons", () => {
   dom.window.BetterCodex.destroy();
 });
 
+test("persists the automatic update checkbox", () => {
+  const saved = [];
+  const { dom } = setup({
+    prepare(windowDom) {
+      windowDom.window.__BETTERCODEX_SAVE_PREFERENCES__ = (payload) => saved.push(JSON.parse(payload));
+    }
+  });
+  const toggle = dom.window.document.getElementById("bettercodex-client-root").shadowRoot.querySelector(".autoupdate-toggle");
+  toggle.checked = true;
+  toggle.dispatchEvent(new dom.window.Event("change"));
+  assert.equal(dom.window.localStorage.getItem("bettercodex:autoupdate:v1"), "true");
+  assert.equal(saved.at(-1).storage["bettercodex:autoupdate:v1"], "true");
+  dom.window.BetterCodex.destroy();
+});
+
 test("restores durable preferences and backs up every BetterCodex storage key", () => {
   const saved = [];
   const addonStorage = JSON.stringify({ "test-addon": false, "test-tweak": true, "test-theme": true });
@@ -233,6 +250,7 @@ test("restores durable preferences and backs up every BetterCodex storage key", 
       persisted: true,
       storage: {
         "bettercodex:addons:v1": addonStorage,
+        "bettercodex:autoupdate:v1": "true",
         "bettercodex.project-kanban.v1": kanbanStorage
       }
     },
@@ -244,6 +262,7 @@ test("restores durable preferences and backs up every BetterCodex storage key", 
   assert.equal(dom.window.document.body.dataset.addon, undefined);
   assert.equal(dom.window.document.body.dataset.theme, "on");
   assert.equal(dom.window.localStorage.getItem("bettercodex.project-kanban.v1"), kanbanStorage);
+  assert.equal(dom.window.document.getElementById("bettercodex-client-root").shadowRoot.querySelector(".autoupdate-toggle").checked, true);
 
   const toggle = dom.window.document.getElementById("bettercodex-client-root").shadowRoot.querySelector("input[data-addon='test-addon']");
   toggle.checked = true;

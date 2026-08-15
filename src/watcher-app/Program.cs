@@ -37,7 +37,7 @@ namespace BetterCodex.Manager
                     if (!shutdownCreated) shutdown.Reset();
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
-                    Application.Run(new ManagerContext(shutdown, HasArgument(args, "--startup")));
+                    Application.Run(new ManagerContext(shutdown, HasArgument(args, "--startup"), HasArgument(args, "--resume-update")));
                 }
                 mutex.ReleaseMutex();
             }
@@ -95,7 +95,7 @@ namespace BetterCodex.Manager
         private string lastState = "starting";
         private bool closing;
 
-        internal ManagerContext(EventWaitHandle shutdownEvent, bool startedAtLogin)
+        internal ManagerContext(EventWaitHandle shutdownEvent, bool startedAtLogin, bool resumeAfterUpdate)
         {
             shutdown = shutdownEvent;
             Directory.CreateDirectory(dataRoot);
@@ -134,11 +134,13 @@ namespace BetterCodex.Manager
             tray.DoubleClick += delegate { OpenCodex(); };
 
             StartWatcher();
+            if (resumeAfterUpdate) OpenCodex();
             timer = new System.Windows.Forms.Timer();
             timer.Interval = 1000;
             timer.Tick += delegate { Tick(); };
             timer.Start();
-            if (!startedAtLogin) tray.ShowBalloonTip(2000, "BetterCodex", "Watching for ChatGPT Codex launches.", ToolTipIcon.Info);
+            if (resumeAfterUpdate) tray.ShowBalloonTip(2500, "BetterCodex updated", "The latest release is installed and Codex is reopening.", ToolTipIcon.Info);
+            else if (!startedAtLogin) tray.ShowBalloonTip(2000, "BetterCodex", "Watching for ChatGPT Codex launches.", ToolTipIcon.Info);
         }
 
         private static ToolStripMenuItem Item(string text, EventHandler click)

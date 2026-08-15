@@ -21,7 +21,7 @@ BetterCodex adds a native-feeling add-on layer to ChatGPT Codex without rewritin
 - **Safe runtime patching** — the signed MSIX package, Codex executables, `app.asar`, and update settings stay untouched.
 - **One-click controls** — every add-on has a visible enable/disable switch in a settings view that follows Codex's light and dark themes.
 - **Durable preferences** — add-on, tweak, theme, and feature state is backed up in the Windows user profile and survives patching or uninstalling BetterCodex.
-- **Update checks** — check the latest GitHub release from BetterCodex settings and jump straight to it when an update is available.
+- **Safe updates** — check releases manually or opt into automatic startup updates; installers are only launched after their published SHA-256 checksum is verified.
 - **Instant development** — core hot reload watches the client, add-on, tweak, and theme files, then reinjects changes without restarting Codex.
 - **Built-in add-on generation** — start a focused Codex task with the exact scaffold, lifecycle, and installation requirements already attached.
 - **Clean removal** — uninstalling removes the watcher, shortcuts, and BetterCodex runtime while leaving Codex and your saved BetterCodex preferences alone.

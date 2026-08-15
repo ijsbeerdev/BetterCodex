@@ -7,7 +7,7 @@ import { getDebuggerTargets, injectTarget, isCodexAppTarget, replaceInjection, s
 import { CATEGORY_DIRECTORIES, loadCatalog } from "./catalog.mjs";
 import { reloadRenderers, watchFiles } from "./hot-reload.mjs";
 import { createPreferencesStore, installPreferencesBridge } from "./preferences.mjs";
-import { installUpdateBridge } from "./updates.mjs";
+import { automaticUpdatesEnabled, installAutomaticUpdate, installUpdateBridge } from "./updates.mjs";
 
 const runtimeRoot = dirname(fileURLToPath(import.meta.url));
 const packageInfo = JSON.parse(await readFile(join(runtimeRoot, "package.json"), "utf8"));
@@ -18,6 +18,7 @@ const dataRoot = join(localProfileRoot, "BetterCodex");
 const logRoot = join(dataRoot, "Logs");
 const logPath = join(logRoot, "bettercodex.log");
 const launchRequestPath = join(dataRoot, "launch-request.json");
+const updateRoot = join(dataRoot, "Updates");
 const preferencesStore = createPreferencesStore(join(profileRoot, "BetterCodex", "preferences.json"));
 async function resolveCatalogRoots() {
   const roots = {};
@@ -131,6 +132,24 @@ async function waitForDebugger() {
 
 async function main() {
   await log(`Starting BetterCodex ${packageInfo.version}; watching ${Object.values(catalogRoots).join(", ")} and ${clientPath}.`);
+  try {
+    const preferences = await preferencesStore.load();
+    if (automaticUpdatesEnabled(preferences)) {
+      await log("Checking for automatic BetterCodex updates.");
+      const update = await installAutomaticUpdate({
+        repositoryUrl: packageInfo.repository.url,
+        currentVersion: packageInfo.version,
+        destinationRoot: updateRoot
+      });
+      if (update.status === "installing") {
+        await log(`Started checksum-verified BetterCodex ${update.version} installer.`);
+        return;
+      }
+      await log("No automatic BetterCodex update is available.");
+    }
+  } catch (error) {
+    await log(`Automatic BetterCodex update failed: ${error.message}`);
+  }
   let targets;
   let child;
   let childExited = false;

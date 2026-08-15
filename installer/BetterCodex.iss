@@ -66,13 +66,19 @@ Name: "{group}\Uninstall BetterCodex"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Install-Actions.ps1"" -Action CompleteInstall"; StatusMsg: "Finishing migration from the preview installer…"; Flags: runhidden waituntilterminated
-Filename: "{app}\BetterCodex.Manager.exe"; Description: "Start BetterCodex"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\BetterCodex.Manager.exe"; Parameters: "--resume-update"; Flags: nowait runhidden; Check: IsAutomaticUpdate
+Filename: "{app}\BetterCodex.Manager.exe"; Description: "Start BetterCodex"; Flags: nowait postinstall skipifsilent; Check: not IsAutomaticUpdate
 
 [UninstallRun]
 Filename: "{app}\BetterCodex.Manager.exe"; Parameters: "--shutdown"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "StopManager"
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Install-Actions.ps1"" -Action StopCurrent"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "StopRuntime"
 
 [Code]
+function IsAutomaticUpdate(): Boolean;
+begin
+  Result := CompareText(ExpandConstant('{param:AUTOMATICUPDATE|0}'), '1') = 0;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
