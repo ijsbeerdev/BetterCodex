@@ -12,7 +12,7 @@ const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 test("bundled add-ons load without a hot-reload toggle", async () => {
   const addonsRoot = fileURLToPath(new URL("../addons", import.meta.url));
   const addons = await loadAddons(addonsRoot);
-  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cyberpunk-theme", "hide-sidebar-voice", "project-kanban", "project-workspace", "thinking-mode-colors", "weekly-limit"]);
+  assert.deepEqual(addons.map(({ manifest }) => manifest.id), ["approval-shelf", "auto-expand-activity", "cyberpunk-theme", "hide-sidebar-help", "hide-sidebar-voice", "project-kanban", "project-workspace", "thinking-mode-colors", "weekly-limit"]);
 
   const clientSource = await readFile(new URL("../src/client.js", import.meta.url), "utf8");
   const dom = new JSDOM("<!doctype html><body><button aria-label='Open help menu'></button></body>", {
@@ -28,7 +28,24 @@ test("bundled add-ons load without a hot-reload toggle", async () => {
   dom.window.eval(clientSource);
   dom.window.__BETTERCODEX_INJECT__({ version: "1.1.0", repository: "https://example.test", addons });
   await delay(25);
+  const firstHelp = dom.window.document.querySelector("button[aria-label='Open help menu']");
+  assert.equal(firstHelp.hasAttribute("data-bettercodex-hide-sidebar-help"), true);
   assert.ok(dom.window.document.getElementById("bettercodex-native-launcher"));
+
+  firstHelp.remove();
+  dom.window.document.getElementById("bettercodex-native-launcher").remove();
+  const replacementHelp = dom.window.document.createElement("button");
+  replacementHelp.setAttribute("aria-label", "Open help menu");
+  replacementHelp.getBoundingClientRect = () => ({
+    left: 235, top: 735, right: 267, bottom: 767, width: 32, height: 32
+  });
+  dom.window.document.body.append(replacementHelp);
+  await delay(25);
+
+  const replacementLauncher = dom.window.document.getElementById("bettercodex-native-launcher");
+  assert.ok(replacementLauncher);
+  assert.equal(replacementHelp.hasAttribute("data-bettercodex-hide-sidebar-help"), true);
+  assert.equal(replacementLauncher.hasAttribute("data-bettercodex-hide-sidebar-help"), false);
   dom.window.BetterCodex.destroy();
 });
 

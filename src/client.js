@@ -723,7 +723,8 @@
 
     const findHelpButton = () => [...document.querySelectorAll("button")].find((element) => {
       const rect = element.getBoundingClientRect();
-      return /open help menu/i.test(element.getAttribute("aria-label") || "") && rect.bottom > innerHeight - 100;
+      const hiddenByTweak = element.hasAttribute("data-bettercodex-hide-sidebar-help");
+      return /open help menu/i.test(element.getAttribute("aria-label") || "") && (hiddenByTweak || rect.bottom > innerHeight - 100);
     });
     const mountLauncher = () => {
       if (launcher?.isConnected) return;
@@ -731,6 +732,7 @@
       if (!help?.parentElement) return;
       launcher = help.cloneNode(false);
       launcher.id = LAUNCHER_ID;
+      launcher.removeAttribute("data-bettercodex-hide-sidebar-help");
       for (const attribute of ["aria-haspopup", "aria-expanded", "data-state", "data-disabled"]) launcher.removeAttribute(attribute);
       launcher.removeAttribute("disabled");
       launcher.setAttribute("aria-label", "Open BetterCodex");

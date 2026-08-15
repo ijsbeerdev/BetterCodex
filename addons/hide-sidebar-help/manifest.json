@@ -1,0 +1,12 @@
+{
+  "id": "hide-sidebar-help",
+  "name": "Hide Sidebar Help",
+  "version": "0.1.0",
+  "description": "Removes the Help shortcut from Codex's bottom sidebar toolbar.",
+  "creator": "ijsbeerdev",
+  "shareUrl": "https://github.com/ijsbeerdev/BetterCodex/tree/main/addons/hide-sidebar-help",
+  "category": "tweak",
+  "tags": ["Sidebar", "Interface"],
+  "screenshot": "screenshot.svg",
+  "enabledByDefault": true
+}
