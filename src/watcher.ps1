@@ -285,7 +285,10 @@ try {
     } catch {
         $eventDriven = $false
         Write-BetterCodexLog "Process-start events are unavailable; using a two-second fallback scan: $($_.Exception.Message)"
-        Write-BetterCodexStatus "degraded" "Using compatibility-mode process detection."
+        # Polling is a fully supported fallback on systems where process-start
+        # event subscriptions are unavailable to a standard user. Keep the
+        # tray healthy instead of presenting a false warning at Windows login.
+        Write-BetterCodexStatus "ready" "Watching for Codex."
     }
 
     Invoke-BetterCodexScan $expectedExecutable -AllowIntercept

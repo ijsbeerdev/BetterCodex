@@ -139,7 +139,7 @@ namespace BetterCodex.Manager
             timer.Interval = 1000;
             timer.Tick += delegate { Tick(); };
             timer.Start();
-            if (resumeAfterUpdate) tray.ShowBalloonTip(2500, "BetterCodex updated", "The latest release is installed and Codex is reopening.", ToolTipIcon.Info);
+            if (resumeAfterUpdate) tray.ShowBalloonTip(4000, "BetterCodex updated", "BetterCodex updated itself; this was not a Codex app update. Codex is reopening so the enhancement can attach.", ToolTipIcon.Info);
             else if (!startedAtLogin) tray.ShowBalloonTip(2000, "BetterCodex", "Watching for ChatGPT Codex launches.", ToolTipIcon.Info);
         }
 

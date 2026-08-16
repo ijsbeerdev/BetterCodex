@@ -40,7 +40,8 @@ test("release uses an event-driven tray manager and a registered Windows install
   assert.match(watcher, /Test-BetterCodexPatched/);
   assert.match(watcher, /CloseMainWindow/);
   assert.match(watcher, /launch-request\.json/);
-  assert.match(watcher, /compatibility-mode process detection/);
+  assert.match(watcher, /Write-BetterCodexStatus "ready" "Watching for Codex\."/);
+  assert.doesNotMatch(watcher, /Write-BetterCodexStatus "degraded"/);
   assert.doesNotMatch(watcher, /Start-Sleep -Milliseconds 250/);
   assert.match(launcher, /takeLaunchArguments/);
   assert.match(launcher, /endpointOccupied/);
@@ -54,6 +55,7 @@ test("release uses an event-driven tray manager and a registered Windows install
   assert.match(manager, /Start with Windows/);
   assert.match(manager, /--shutdown/);
   assert.match(manager, /--resume-update/);
+  assert.match(manager, /this was not a Codex app update/);
   assert.match(build, /BetterCodex\.Manager\.exe/);
 
   assert.match(installer, /AppId=/);
